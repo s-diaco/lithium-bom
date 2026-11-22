@@ -153,10 +153,9 @@ class TestBirthdayAdminAndUi(TestCase):
         # Birthday brand swap on home + navbar; loading stays normal Lithium mark.
         self.assertIn("lithium-birthday.svg", html)
         self.assertIn("bom-brand-mark-birthday", html)
-        self.assertTrue(
-            "Happy Birthday" in html or "تولدت مبارک" in html,
-            "home/navbar should show the birthday greeting",
-        )
+        # Home hub wordmark stays English-only (not translated).
+        self.assertIn('class="bom-hub-title">Happy Birthday</h1>', html)
+        self.assertNotIn('class="bom-hub-title">تولدت مبارک</h1>', html)
         self.assertNotIn("bom-page-loading-mark-wrap", html)
         self.assertIn("bom/img/lithium.png", html)  # loading overlay still normal
         css = open("assets/src/input.css").read()

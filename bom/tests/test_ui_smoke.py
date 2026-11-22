@@ -280,11 +280,7 @@ class TestUiSmoke(TransactionTestCase):
         self.assertEqual(hub.status_code, 200)
         hub_html = hub.content.decode("utf-8")
         self.assertIn("bom-hub", hub_html)
-        self.assertTrue(
-            'class="bom-hub-title">Lithium</h1>' in hub_html
-            or 'class="bom-hub-title">لیتیوم</h1>' in hub_html,
-            "hub brand title missing",
-        )
+        self.assertIn('class="bom-hub-title">Lithium</h1>', hub_html)
         self.assertNotIn("bom-hub-lede", hub_html)
         self.assertNotIn("BoM Price calculations", hub_html)
         self.assertNotIn("محاسبات قیمت BoM", hub_html)
