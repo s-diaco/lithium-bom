@@ -1,8 +1,10 @@
-/* fallback */
+/* Local Material Symbols (used as .material-icons ligatures).
+   font-display: block — hide ligature text until the icon font paints (avoids FOUT of "home"/"menu"). */
 @font-face {
   font-family: 'Material Icons';
   font-style: normal;
   font-weight: 400;
+  font-display: block;
   src: url(/static/bom/font/MaterialSymbolsRounded[FILL,GRAD,opsz,wght].woff2) format('woff2');
 }
 
