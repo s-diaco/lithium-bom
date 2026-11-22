@@ -155,9 +155,10 @@ class TestBirthdayAdminAndUi(TestCase):
         self.assertNotIn("happy birthday", html.lower())
         self.assertNotIn("تولدت مبارک", html)
         css = open("assets/src/input.css").read()
-        self.assertIn("bom-birthday-sparks-drift", css)
+        self.assertIn("bom-birthday-sparks-twinkle", css)
         self.assertIn("bom-birthday-mark-pulse", css)
         self.assertIn("bom-birthday-navbar-shimmer", css)
+        self.assertNotIn("bom-birthday-sparks-drift", css)
         self.assertNotIn("bom-birthday-loading-", css)
         self.assertNotIn("body.is-birthday .bom-page-loading", css)
 
