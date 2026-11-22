@@ -168,37 +168,36 @@ html.dark .bom-brand-mark {
   filter: invert(1);
 }
 
-/* Birthday surprise: warm shell tint (noticeable, still no emoji / no purple). */
+/* Birthday surprise: soft pink / rose shell (noticeable; no emoji / no purple). */
 body.is-birthday {
-  --color-canvas: #f3ebe0;
-  --color-border: #d2c4ae;
-  --color-accent: #a67c3d;
-  /* Soft warm wash so the day reads differently from the normal cool canvas. */
+  --color-canvas: #f8eef2;
+  --color-border: #e0c4ce;
+  --color-accent: #c45d7a;
+  /* Soft blush wash so the day reads differently from the normal cool canvas. */
   background-image: linear-gradient(
     180deg,
-    #f7e8d4 0%,
+    #fce4ec 0%,
     var(--color-canvas) 12rem,
     var(--color-canvas) 100%
   );
-  /* Spark accents: warm amber / soft green / cream (Lithium palette, not purple). */
-  --bom-birthday-spark-a: #c4a574;
-  --bom-birthday-spark-b: #7aa88a;
-  --bom-birthday-spark-c: #e8d4b0;
+  /* Spark accents: rose / blush pink (not beige, not purple). */
+  --bom-birthday-spark-a: #e08aa8;
+  --bom-birthday-spark-b: #d46b88;
+  --bom-birthday-spark-c: #f2c4d4;
 }
 
 body.is-birthday .bom-navbar {
   position: relative;
-  /* Warm underline via border only — smoke forbids inset box-shadow. */
-  border-bottom-width: 2px;
-  border-bottom-color: #b8955a;
-  background-color: color-mix(in srgb, #f7e8d4 70%, transparent);
+  border-bottom-color: #d07090;
+  /* Underline accent lives on ::after (shimmer); avoid inset box-shadow — smoke forbids it. */
+  background-color: color-mix(in srgb, #fce4ec 70%, transparent);
 }
 
 body.is-birthday .bom-brand-mark {
-  filter: sepia(0.45) saturate(1.05) hue-rotate(5deg);
+  filter: sepia(0.25) saturate(1.35) hue-rotate(-40deg);
 }
 
-/* Motion 1: twinkling warm glints (not falling snow / not confetti). */
+/* Motion 1: twinkling rose glints (not falling snow / not confetti). */
 body.is-birthday::before,
 body.is-birthday::after {
   content: "";
@@ -248,7 +247,7 @@ body.is-birthday .bom-navbar .bom-brand-mark {
   animation: bom-birthday-mark-pulse 1.8s ease-in-out infinite;
 }
 
-/* Motion 3: bright warm sweep along the navbar bottom edge. */
+/* Motion 3: bright rose sweep along the navbar bottom edge. */
 body.is-birthday .bom-navbar::after {
   content: "";
   position: absolute;
@@ -271,27 +270,27 @@ body.is-birthday .bom-navbar::after {
 }
 
 html.dark body.is-birthday {
-  --color-canvas: #16130e;
-  --color-border: #4a4030;
-  --color-accent: #d4b07a;
-  --bom-birthday-spark-a: #d4b07a;
-  --bom-birthday-spark-b: #6f9a7c;
-  --bom-birthday-spark-c: #a89068;
+  --color-canvas: #1a1216;
+  --color-border: #5a3a45;
+  --color-accent: #e8a0b5;
+  --bom-birthday-spark-a: #e8a0b5;
+  --bom-birthday-spark-b: #d48098;
+  --bom-birthday-spark-c: #c07088;
   background-image: linear-gradient(
     180deg,
-    #2a2218 0%,
+    #2a1820 0%,
     var(--color-canvas) 12rem,
     var(--color-canvas) 100%
   );
 }
 
 html.dark body.is-birthday .bom-navbar {
-  background-color: color-mix(in srgb, #2a2218 70%, transparent);
-  border-bottom-color: #c4a574;
+  background-color: color-mix(in srgb, #2a1820 70%, transparent);
+  border-bottom-color: #e08aa8;
 }
 
 html.dark body.is-birthday .bom-brand-mark {
-  filter: invert(1) sepia(0.35) saturate(0.9) hue-rotate(5deg);
+  filter: invert(1) sepia(0.25) saturate(1.2) hue-rotate(-35deg);
 }
 
 html.dark body.is-birthday::before {

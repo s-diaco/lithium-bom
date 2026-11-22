@@ -161,6 +161,10 @@ class TestBirthdayAdminAndUi(TestCase):
         self.assertNotIn("bom-birthday-sparks-drift", css)
         self.assertNotIn("bom-birthday-loading-", css)
         self.assertNotIn("body.is-birthday .bom-page-loading", css)
+        # Pink / rose shell — not the old beige wash.
+        self.assertIn("#fce4ec", css)
+        self.assertIn("#c45d7a", css)
+        self.assertNotIn("#f3ebe0", css)
 
     def test_jalali_birthday_ui_class_when_jalali_today(self):
         # 1403/08/30 stores Jalali 8/30; 2026-11-21 is Jalali 1405/08/30.
