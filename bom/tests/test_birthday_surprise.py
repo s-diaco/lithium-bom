@@ -150,10 +150,25 @@ class TestBirthdayAdminAndUi(TestCase):
         self.assertTrue(response.context["is_birthday"])
         html = response.content.decode("utf-8")
         self.assertIn("is-birthday", html)
-        # Loading mark wrap is the birthday spinner hook; keep surprise (no spoilers).
-        self.assertIn("bom-page-loading-mark-wrap", html)
-        self.assertNotIn("happy birthday", html.lower())
-        self.assertNotIn("تولدت مبارک", html)
+        # Birthday brand swap on home + navbar; loading stays normal Lithium mark.
+        self.assertIn("lithium-birthday.svg", html)
+        self.assertIn("bom-brand-mark-birthday", html)
+        # Home hub wordmark stays English-only (not translated).
+        self.assertIn('class="bom-hub-title">Happy Birthday</h1>', html)
+        self.assertNotIn('class="bom-hub-title">تولدت مبارک</h1>', html)
+        self.assertNotIn("bom-page-loading-mark-wrap", html)
+        self.assertIn("bom/img/lithium.png", html)  # loading overlay still normal
+        css = open("assets/src/input.css").read()
+        self.assertIn("bom-birthday-sparks-twinkle", css)
+        self.assertIn("bom-birthday-mark-pulse", css)
+        self.assertNotIn("bom-birthday-navbar-shimmer", css)
+        self.assertNotIn("bom-birthday-sparks-drift", css)
+        self.assertNotIn("bom-birthday-loading-", css)
+        self.assertNotIn("body.is-birthday .bom-page-loading", css)
+        # Pink / rose shell — not the old beige wash.
+        self.assertIn("#fce4ec", css)
+        self.assertIn("#c45d7a", css)
+        self.assertNotIn("#f3ebe0", css)
 
     def test_jalali_birthday_ui_class_when_jalali_today(self):
         # 1403/08/30 stores Jalali 8/30; 2026-11-21 is Jalali 1405/08/30.
@@ -179,7 +194,11 @@ class TestBirthdayAdminAndUi(TestCase):
             response = self.client.get(reverse("bom:home"))
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.context["is_birthday"])
-        self.assertNotIn("is-birthday", response.content.decode("utf-8"))
+        html = response.content.decode("utf-8")
+        self.assertNotIn("is-birthday", html)
+        self.assertNotIn("lithium-birthday.svg", html)
+        self.assertNotIn("Happy Birthday", html)
+        self.assertNotIn("تولدت مبارک", html)
 
     def test_context_processor_false_when_unset(self):
         request = self.factory.get("/")

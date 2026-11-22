@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-hidden="true">
+  <!-- Tasteful birthday cake mark: rose frosting, soft blush tiers (no purple). -->
+  <rect x="10" y="34" width="44" height="18" rx="4" fill="#c45d7a"/>
+  <rect x="14" y="24" width="36" height="14" rx="3.5" fill="#e08aa8"/>
+  <rect x="20" y="16" width="24" height="12" rx="3" fill="#f2c4d4"/>
+  <!-- Candles -->
+  <rect x="26" y="8" width="3" height="10" rx="1" fill="#f8eef2"/>
+  <rect x="35" y="8" width="3" height="10" rx="1" fill="#f8eef2"/>
+  <circle cx="27.5" cy="6.5" r="2.2" fill="#d46b88"/>
+  <circle cx="36.5" cy="6.5" r="2.2" fill="#d46b88"/>
+  <!-- Frosting dots -->
+  <circle cx="22" cy="30" r="2" fill="#fce4ec"/>
+  <circle cx="32" cy="28" r="2" fill="#fce4ec"/>
+  <circle cx="42" cy="30" r="2" fill="#fce4ec"/>
+  <circle cx="18" cy="40" r="2.2" fill="#f2c4d4"/>
+  <circle cx="32" cy="42" r="2.2" fill="#f2c4d4"/>
+  <circle cx="46" cy="40" r="2.2" fill="#f2c4d4"/>
+  <!-- Plate -->
+  <ellipse cx="32" cy="54" rx="22" ry="4" fill="#e0c4ce"/>
+</svg>
