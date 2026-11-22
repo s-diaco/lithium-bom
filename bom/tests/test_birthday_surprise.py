@@ -150,10 +150,16 @@ class TestBirthdayAdminAndUi(TestCase):
         self.assertTrue(response.context["is_birthday"])
         html = response.content.decode("utf-8")
         self.assertIn("is-birthday", html)
-        # Loading mark wrap is the birthday spinner hook; keep surprise (no spoilers).
-        self.assertIn("bom-page-loading-mark-wrap", html)
+        # Loading stays normal (no birthday spinner wrap / spoiler copy).
+        self.assertNotIn("bom-page-loading-mark-wrap", html)
         self.assertNotIn("happy birthday", html.lower())
         self.assertNotIn("تولدت مبارک", html)
+        css = open("assets/src/input.css").read()
+        self.assertIn("bom-birthday-sparks-drift", css)
+        self.assertIn("bom-birthday-mark-pulse", css)
+        self.assertIn("bom-birthday-navbar-shimmer", css)
+        self.assertNotIn("bom-birthday-loading-", css)
+        self.assertNotIn("body.is-birthday .bom-page-loading", css)
 
     def test_jalali_birthday_ui_class_when_jalali_today(self):
         # 1403/08/30 stores Jalali 8/30; 2026-11-21 is Jalali 1405/08/30.
