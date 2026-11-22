@@ -31,6 +31,8 @@
     </script>
     <link href="{% static 'bom/css/material-icons.css' %}" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'bom/css/app.css' %}">
+    {# Icon font first — large woff2; preload + font-display:block prevents ligature-text FOUT. #}
+    <link rel="preload" href="{% static 'bom/font/MaterialSymbolsRounded[FILL,GRAD,opsz,wght].woff2' %}" as="font" type="font/woff2" crossorigin>
     {# Warm print face early — Chrome print preview often paints Vazirmatn if Parastoo is still unloaded. #}
     <link rel="preload" href="{% static 'bom/font/Parastoo.woff2' %}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{% static 'bom/font/Parastoo-Bold.woff2' %}" as="font" type="font/woff2" crossorigin>
