@@ -187,9 +187,8 @@ body.is-birthday {
 }
 
 body.is-birthday .bom-navbar {
-  position: relative;
   border-bottom-color: #d07090;
-  /* Underline accent lives on ::after (shimmer); avoid inset box-shadow — smoke forbids it. */
+  /* Solid rose underline only — no animated sweep. Avoid inset box-shadow (smoke forbids). */
   background-color: color-mix(in srgb, #fce4ec 70%, transparent);
 }
 
@@ -245,28 +244,6 @@ body.is-birthday::after {
 body.is-birthday .bom-navbar .bom-brand-mark {
   transform-origin: center;
   animation: bom-birthday-mark-pulse 1.8s ease-in-out infinite;
-}
-
-/* Motion 3: bright rose sweep along the navbar bottom edge. */
-body.is-birthday .bom-navbar::after {
-  content: "";
-  position: absolute;
-  inset-inline: 0;
-  bottom: 0;
-  height: 3px;
-  z-index: 1;
-  pointer-events: none;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    transparent 30%,
-    color-mix(in srgb, var(--bom-birthday-spark-a) 95%, transparent) 45%,
-    color-mix(in srgb, var(--bom-birthday-spark-b) 90%, transparent) 55%,
-    transparent 70%,
-    transparent 100%
-  );
-  background-size: 240% 100%;
-  animation: bom-birthday-navbar-shimmer 2.8s linear infinite;
 }
 
 html.dark body.is-birthday {
@@ -345,25 +322,10 @@ html.dark body.is-birthday::after {
   }
 }
 
-@keyframes bom-birthday-navbar-shimmer {
-  0% {
-    background-position: 120% 50%;
-    opacity: 0.55;
-  }
-  50% {
-    opacity: 1;
-  }
-  100% {
-    background-position: -120% 50%;
-    opacity: 0.55;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   body.is-birthday::before,
   body.is-birthday::after,
-  body.is-birthday .bom-navbar .bom-brand-mark,
-  body.is-birthday .bom-navbar::after {
+  body.is-birthday .bom-navbar .bom-brand-mark {
     animation: none;
   }
 
@@ -374,17 +336,11 @@ html.dark body.is-birthday::after {
   body.is-birthday::after {
     opacity: 0.35;
   }
-
-  body.is-birthday .bom-navbar::after {
-    opacity: 0.75;
-    background-position: 50% 50%;
-  }
 }
 
 @media print {
   body.is-birthday::before,
-  body.is-birthday::after,
-  body.is-birthday .bom-navbar::after {
+  body.is-birthday::after {
     display: none;
   }
 
