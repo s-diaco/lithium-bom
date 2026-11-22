@@ -150,10 +150,15 @@ class TestBirthdayAdminAndUi(TestCase):
         self.assertTrue(response.context["is_birthday"])
         html = response.content.decode("utf-8")
         self.assertIn("is-birthday", html)
-        # Loading stays normal (no birthday spinner wrap / spoiler copy).
+        # Birthday brand swap on home + navbar; loading stays normal Lithium mark.
+        self.assertIn("lithium-birthday.svg", html)
+        self.assertIn("bom-brand-mark-birthday", html)
+        self.assertTrue(
+            "Happy Birthday" in html or "تولدت مبارک" in html,
+            "home/navbar should show the birthday greeting",
+        )
         self.assertNotIn("bom-page-loading-mark-wrap", html)
-        self.assertNotIn("happy birthday", html.lower())
-        self.assertNotIn("تولدت مبارک", html)
+        self.assertIn("bom/img/lithium.png", html)  # loading overlay still normal
         css = open("assets/src/input.css").read()
         self.assertIn("bom-birthday-sparks-twinkle", css)
         self.assertIn("bom-birthday-mark-pulse", css)
@@ -190,7 +195,11 @@ class TestBirthdayAdminAndUi(TestCase):
             response = self.client.get(reverse("bom:home"))
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.context["is_birthday"])
-        self.assertNotIn("is-birthday", response.content.decode("utf-8"))
+        html = response.content.decode("utf-8")
+        self.assertNotIn("is-birthday", html)
+        self.assertNotIn("lithium-birthday.svg", html)
+        self.assertNotIn("Happy Birthday", html)
+        self.assertNotIn("تولدت مبارک", html)
 
     def test_context_processor_false_when_unset(self):
         request = self.factory.get("/")

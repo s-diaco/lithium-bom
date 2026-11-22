@@ -476,6 +476,9 @@ msgstr "ایجاد حساب"
 msgid "Lithium"
 msgstr "لیتیوم"
 
+msgid "Happy Birthday"
+msgstr "تولدت مبارک"
+
 msgid "Home"
 msgstr "خانه"
 

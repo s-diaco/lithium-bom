@@ -192,8 +192,15 @@ body.is-birthday .bom-navbar {
   background-color: color-mix(in srgb, #fce4ec 70%, transparent);
 }
 
-body.is-birthday .bom-brand-mark {
+/* Pink tint only for the charcoal Lithium PNG; birthday SVG is already rose. */
+body.is-birthday .bom-brand-mark:not(.bom-brand-mark-birthday) {
   filter: sepia(0.25) saturate(1.35) hue-rotate(-40deg);
+}
+
+body.is-birthday .bom-brand-mark-birthday,
+html.dark body.is-birthday .bom-brand-mark-birthday,
+html.dark .bom-brand-mark-birthday {
+  filter: none;
 }
 
 /* Motion 1: twinkling rose glints (not falling snow / not confetti). */
@@ -266,7 +273,7 @@ html.dark body.is-birthday .bom-navbar {
   border-bottom-color: #e08aa8;
 }
 
-html.dark body.is-birthday .bom-brand-mark {
+html.dark body.is-birthday .bom-brand-mark:not(.bom-brand-mark-birthday) {
   filter: invert(1) sepia(0.25) saturate(1.2) hue-rotate(-35deg);
 }
 

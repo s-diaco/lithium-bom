@@ -46,10 +46,14 @@
 {% block navbar %}
 <header class="bom-navbar printer-hide sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur">
     <div class="bom-navbar-inner">
-        <a href="{% if user.is_authenticated %}{% url 'bom:home' %}{% else %}{% url 'login' %}{% endif %}" title="{% trans "Lithium" %} | {% trans "Home" %}" class="flex shrink-0 items-center gap-2">
-            <img class="bom-brand-mark" width="40" height="40" alt="Lithium Logo" src="{% static 'bom/img/lithium.png' %}"/>
+        <a href="{% if user.is_authenticated %}{% url 'bom:home' %}{% else %}{% url 'login' %}{% endif %}" title="{% if is_birthday %}{% trans "Happy Birthday" %}{% else %}{% trans "Lithium" %}{% endif %} | {% trans "Home" %}" class="flex shrink-0 items-center gap-2">
+            {% if is_birthday %}
+                <img class="bom-brand-mark bom-brand-mark-birthday" width="40" height="40" alt="{% trans "Happy Birthday" %}" src="{% static 'bom/img/lithium-birthday.svg' %}"/>
+            {% else %}
+                <img class="bom-brand-mark" width="40" height="40" alt="Lithium Logo" src="{% static 'bom/img/lithium.png' %}"/>
+            {% endif %}
             {% if not user.is_authenticated %}
-                <span class="text-sm font-semibold text-ink">{% trans "Lithium" %}</span>
+                <span class="text-sm font-semibold text-ink">{% if is_birthday %}{% trans "Happy Birthday" %}{% else %}{% trans "Lithium" %}{% endif %}</span>
             {% endif %}
         </a>
         {% if user.is_authenticated and title %}
