@@ -25,7 +25,7 @@ from bom.helpers import (
     create_some_fake_part_classes,
     create_some_fake_parts,
 )
-from bom.models import Part, Seller
+from bom.models import Organization, Part, PartRevision, Seller
 from bom.utils import currency_label, normalize_grouped_number
 from decimal import Decimal
 from djmoney.money import Money
@@ -43,6 +43,42 @@ class TestForms(TestCase):
         self.organization = create_a_fake_organization(self.user)
         self.profile = self.user.bom_profile(organization=self.organization)
         translation.activate("en-US")
+
+    def test_revision_description_autocomplete_is_organization_scoped(self):
+        parts = create_some_fake_parts(organization=self.organization)
+        PartRevision.objects.filter(part=parts[0]).update(description="Own description")
+        PartRevision.objects.create(part=parts[0], revision="scope-test", description="Own description")
+        other_org = Organization.objects.create(name="Other", owner=self.user)
+        other_parts = create_some_fake_parts(organization=other_org)
+        PartRevision.objects.filter(part__in=other_parts).update(
+            description="Private other organization description"
+        )
+
+        form = PartRevisionForm(organization=self.organization)
+        suggestions = list(form.fields["description"].widget.queryset)
+        self.assertIn("Own description", suggestions)
+        self.assertEqual(suggestions.count("Own description"), 1)
+        self.assertNotIn("Private other organization description", suggestions)
+        self.assertNotIn(
+            "Private other organization description", str(form["description"])
+        )
+
+    def test_revision_description_autocomplete_uses_instance_organization(self):
+        parts = create_some_fake_parts(organization=self.organization)
+        revision = parts[0].latest()
+        revision.description = "Instance organization description"
+        revision.save()
+        form = PartRevisionForm(instance=revision)
+        self.assertIn(
+            "Instance organization description",
+            list(form.fields["description"].widget.queryset),
+        )
+
+    def test_revision_description_autocomplete_without_organization_is_empty(self):
+        create_some_fake_parts(organization=self.organization)
+        form = PartRevisionForm()
+        with self.assertNumQueries(0):
+            self.assertEqual(list(form.fields["description"].widget.queryset), [])
 
     def test_part_info_form(self):
         form_data = {"quantity": 10}
