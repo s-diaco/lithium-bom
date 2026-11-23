@@ -331,17 +331,26 @@ class TestUiSmoke(TransactionTestCase):
         self.assertIn("Brown dog", raw_html)
         self.assertNotIn("part-primary-meta", raw_html)
         self.assertRegex(raw_html, r"Mouser\s*·\s*SPN-RAW-1|Digi-Key\s*·\s*SPN-RAW-1")
+        from django.utils.translation import gettext as _
+
+        seller_header = _("Seller")
+        seller_pn_header = _("Seller Part Number")
+        material_type_header = _("Material Type")
+        material_header = _("Material")
         self.assertNotRegex(
             raw_html,
-            r"<th[^>]*>\s*(Material|متریال)\s*</th>",
+            rf"<th[^>]*>\s*{re.escape(material_header)}\s*</th>",
             "Material column header should be removed from materials list",
         )
         self.assertNotRegex(
             raw_html,
-            r"<th[^>]*>\s*(Seller Part Number|کد فروشنده)\s*</th>",
+            rf"<th[^>]*>\s*{re.escape(seller_pn_header)}\s*</th>",
         )
-        # Raw filter uses Seller as the meta column header (not a second Seller column).
-        self.assertEqual(len(re.findall(r"<th[^>]*>\s*(Seller|فروشنده)\s*</th>", raw_html)), 1)
+        # Raw filter uses Seller as the single meta column header.
+        self.assertEqual(
+            len(re.findall(rf"<th[^>]*>\s*{re.escape(seller_header)}\s*</th>", raw_html)),
+            1,
+        )
 
         # Products: material type in meta column.
         organization.ensure_default_product_types()
@@ -354,18 +363,11 @@ class TestUiSmoke(TransactionTestCase):
         products = self.client.get(reverse("bom:materials"), {"product": "1"})
         self.assertEqual(products.status_code, 200)
         products_html = products.content.decode("utf-8")
-        # {% trans product_type.name %} — en "Frit" / fa "فریت" (and other types).
-        from django.utils.translation import override, gettext
-
-        with override("fa_IR"):
-            fa_type_name = gettext(product_pt.name)
-        self.assertTrue(
-            product_pt.name in products_html or fa_type_name in products_html,
-            f"material type missing (en={product_pt.name!r} fa={fa_type_name!r})",
-        )
+        # {% trans product_type.name %} under active LANGUAGE_CODE.
+        self.assertIn(_(product_pt.name), products_html)
         self.assertRegex(
             products_html,
-            r"<th[^>]*>\s*(Material Type|نوع متریال)\s*</th>",
+            rf"<th[^>]*>\s*{re.escape(material_type_header)}\s*</th>",
         )
 
         css = open("bom/static/bom/css/style.css").read()
