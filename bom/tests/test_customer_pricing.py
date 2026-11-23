@@ -467,7 +467,7 @@ class TestCustomerPricing(TransactionTestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.customer.name)
-        # Page renders Money as currency display ($ 120.00), not Decimal('120.0000').
+        # Amount-only in cells; currency lives in the two-row header.
         from bom.templatetags.bom_i18n import money_amount
 
         self.assertContains(response, money_amount(row.price))

@@ -383,10 +383,10 @@
                                     <td class="text-normal td-med">
                                         <a href="{% url 'bom:customer-info' customer_id=row.customer.id %}">{{ row.customer.name }}</a>
                                     </td>
-                                    <td class="text-normal td-med">{{ row.base_cost|default:"-" }}</td>
+                                    <td class="text-normal td-med">{{ row.base_cost|money_amount|default:"-" }}</td>
                                     <td class="text-normal td-med">{{ row.profit_percent }}</td>
                                     <td class="text-normal td-med">{{ row.current_profit_percent|default:"-" }}</td>
-                                    <td class="text-normal td-med">{{ row.price|default:"-" }}</td>
+                                    <td class="text-normal td-med">{{ row.price|money_amount|default:"-" }}</td>
                                     <td class="text-normal td-med">{{ row.quantity|grouped_number }}</td>
                                     <td class="text-normal td-med">{% user_datetime row.created_at %}</td>
                                     <td class="text-normal td-med">
