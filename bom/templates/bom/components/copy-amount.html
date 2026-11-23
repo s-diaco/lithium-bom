@@ -1,0 +1,14 @@
+{% load i18n %}
+{% load bom_i18n %}
+{% with display=amount|money_amount %}
+{% if display %}
+<span class="bom-amount-copy">{{ display }}<button type="button"
+        class="bom-copy-amount printer-hide"
+        data-copy="{{ display|cut:',' }}"
+        data-copied-label="{% trans "Copied" %}"
+        title="{% trans "Copy price" %}"
+        aria-label="{% trans "Copy price" %}">
+    <i class="material-icons" aria-hidden="true">content_copy</i>
+</button></span>
+{% else %}-{% endif %}
+{% endwith %}

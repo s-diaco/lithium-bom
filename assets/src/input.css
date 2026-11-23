@@ -860,6 +860,43 @@ ul.errorlist {
   white-space: nowrap;
 }
 
+/* Copy-to-clipboard on customer price amounts (loaded via app.css). */
+.bom-amount-copy {
+  white-space: nowrap;
+}
+
+.bom-copy-amount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-inline-start: 0.15rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  opacity: 0.45;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.bom-copy-amount:hover,
+.bom-copy-amount:focus-visible {
+  opacity: 1;
+}
+
+.bom-copy-amount.is-copied {
+  opacity: 1;
+  color: #2e7d32;
+}
+
+/* Beat material-icons.css default 24px (app.css loads after it). */
+.bom-copy-amount .material-icons {
+  font-size: 12px;
+  width: 12px;
+  height: 12px;
+  line-height: 1;
+}
+
 .printer-hide {
 }
 

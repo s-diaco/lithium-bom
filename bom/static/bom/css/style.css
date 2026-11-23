@@ -376,7 +376,6 @@ footer.page-footer>div.container>div.row>div.col>p{
     margin: 11px 0;
 }
 
-
 @media print {
     /* Ensure links are black for better readability in print */
     a {
