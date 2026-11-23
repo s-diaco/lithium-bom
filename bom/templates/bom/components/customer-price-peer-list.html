@@ -29,7 +29,7 @@
                 <td class="text-normal td-med text-center">{{ row.base_cost|money_amount|default:"-" }}</td>
                 <td class="text-normal td-med text-center">{{ row.profit_percent|floatformat:0 }}</td>
                 <td class="text-normal td-med text-center">{{ row.current_profit_percent|floatformat:0|default:"-" }}</td>
-                <td class="text-normal td-med text-center">{% include 'bom/components/copy-amount.html' with amount=row.price %}</td>
+                <td class="text-normal td-med text-center">{{ row.price|money_amount|default:"-" }}</td>
                 <td class="text-normal td-med text-center">{{ row.quantity|grouped_number }}</td>
                 <td class="text-normal td-med text-center">{% user_date row.created_at %}</td>
             </tr>

@@ -1641,12 +1641,7 @@ class TestCustomerPricing(TransactionTestCase):
         curr = currency_label(self.organization.currency)
         self.assertIn(money_amount(row.base_cost), peer_table)
         self.assertIn(money_amount(row.price), peer_table)
-        self.assertIn("bom-copy-amount", peer_table)
-        self.assertIn("content_copy", peer_table)
-        self.assertIn(
-            'data-copy="%s"' % money_amount(row.price).replace(",", ""),
-            peer_table,
-        )
+        self.assertNotIn("bom-copy-amount", peer_table)
         self.assertRegex(
             peer_table,
             rf"(?:BoM Cost|هزینه صورت مواد)<br>\({re.escape(curr)}\)",

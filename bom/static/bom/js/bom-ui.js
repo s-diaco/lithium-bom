@@ -617,13 +617,28 @@
 
   function flashCopyAmountButton(btn) {
     var prevTitle = btn.getAttribute("title") || "";
+    var prevLabel = btn.getAttribute("aria-label") || prevTitle;
     var copied = btn.getAttribute("data-copied-label") || "Copied";
+    var icon = btn.querySelector(".material-icons");
+    if (btn._copyFlashTimer) {
+      window.clearTimeout(btn._copyFlashTimer);
+      btn._copyFlashTimer = null;
+    }
     btn.classList.add("is-copied");
     btn.setAttribute("title", copied);
-    window.setTimeout(function () {
+    btn.setAttribute("aria-label", copied);
+    if (icon) {
+      icon.textContent = "check";
+    }
+    btn._copyFlashTimer = window.setTimeout(function () {
+      btn._copyFlashTimer = null;
       btn.classList.remove("is-copied");
       btn.setAttribute("title", prevTitle);
-    }, 1200);
+      btn.setAttribute("aria-label", prevLabel);
+      if (icon) {
+        icon.textContent = "content_copy";
+      }
+    }, 1500);
   }
 
   function copyAmountText(text) {

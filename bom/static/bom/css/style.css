@@ -395,9 +395,13 @@ footer.page-footer>div.container>div.row>div.col>p{
 }
 
 .bom-copy-amount:hover,
-.bom-copy-amount:focus-visible,
+.bom-copy-amount:focus-visible {
+    opacity: 1;
+}
+
 .bom-copy-amount.is-copied {
     opacity: 1;
+    color: #2e7d32;
 }
 
 .bom-copy-amount .material-icons {
