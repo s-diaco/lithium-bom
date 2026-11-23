@@ -467,7 +467,7 @@ class TestCustomerPricing(TransactionTestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.customer.name)
-        # Page renders Money as currency display ($ 120.00), not Decimal('120.0000').
+        # Amount-only in cells; currency lives in the two-row header.
         from bom.templatetags.bom_i18n import money_amount
 
         self.assertContains(response, money_amount(row.price))
@@ -774,15 +774,13 @@ class TestCustomerPricing(TransactionTestCase):
         )
         self.assertEqual(response.status_code, 200)
         html = response.content.decode()
-        self.assertTrue(
-            "Confirmed profit %" in html
-            or "سود تأیید شده ٪" in html
-            or "درصد سود تأییدشده" in html
+        self.assertRegex(
+            html,
+            r"Confirmed profit<br>\(%\)|سود تأیید شده<br>\(درصد\)",
         )
-        self.assertTrue(
-            "Current profit %" in html
-            or "سود فعلی ٪" in html
-            or "درصد سود فعلی" in html
+        self.assertRegex(
+            html,
+            r"Current profit<br>\(%\)|سود فعلی<br>\(درصد\)",
         )
         annotated = response.context["customer_prices"]
         self.assertEqual(len(annotated), 1)
@@ -812,15 +810,13 @@ class TestCustomerPricing(TransactionTestCase):
         )
         self.assertEqual(response.status_code, 200)
         html = response.content.decode()
-        self.assertTrue(
-            "Confirmed profit %" in html
-            or "سود تأیید شده ٪" in html
-            or "درصد سود تأییدشده" in html
+        self.assertRegex(
+            html,
+            r"Confirmed profit<br>\(%\)|سود تأیید شده<br>\(درصد\)",
         )
-        self.assertTrue(
-            "Current profit %" in html
-            or "سود فعلی ٪" in html
-            or "درصد سود فعلی" in html
+        self.assertRegex(
+            html,
+            r"Current profit<br>\(%\)|سود فعلی<br>\(درصد\)",
         )
         latest = response.context["latest_prices"]
         self.assertEqual(len(latest), 1)
@@ -1280,19 +1276,67 @@ class TestCustomerPricing(TransactionTestCase):
         self.assertEqual(row.quantity, 250)
         self.assertEqual(row.note, "qty order")
 
+        qty_header = re.compile(
+            r"Order quantity<br>\(kg\)|مقدار سفارش<br>\(کیلوگرم\)"
+        )
         customer_info = self.client.get(
             reverse("bom:customer-info", kwargs={"customer_id": self.customer.id})
         )
         self.assertEqual(customer_info.status_code, 200)
-        self.assertContains(customer_info, "مقدار سفارش (کیلوگرم)")
+        self.assertRegex(customer_info.content.decode(), qty_header)
         self.assertContains(customer_info, "250")
 
         part_info = self.client.get(
             reverse("bom:part-info", kwargs={"part_id": self.part.id})
         )
         self.assertEqual(part_info.status_code, 200)
-        self.assertContains(part_info, "مقدار سفارش (کیلوگرم)")
+        self.assertRegex(part_info.content.decode(), qty_header)
         self.assertContains(part_info, "250")
+
+    def test_order_quantity_displays_thousands_separator(self):
+        from bom.templatetags.bom_i18n import grouped_number
+
+        part_revision = self.part.latest()
+        base_cost = part_revision.bom_unit_cost_at_quantity(1)
+        tier_price = self._tier_price(base_cost, Decimal("20"))
+
+        response = self.client.post(
+            reverse(
+                "bom:customer-price-create", kwargs={"customer_id": self.customer.id}
+            ),
+            self._confirm_payload(
+                Decimal("20"),
+                tier_price.amount,
+                note="big qty",
+                quantity="10,000",
+            ),
+        )
+        self.assertEqual(response.status_code, 302)
+        row = CustomerPrice.objects.get(customer=self.customer, part=self.part)
+        self.assertEqual(row.quantity, 10000)
+
+        formatted = grouped_number(row.quantity)
+        self.assertEqual(formatted, "10,000")
+
+        customer_info = self.client.get(
+            reverse("bom:customer-info", kwargs={"customer_id": self.customer.id})
+        )
+        self.assertContains(customer_info, formatted)
+
+        part_info = self.client.get(
+            reverse("bom:part-info", kwargs={"part_id": self.part.id})
+        )
+        self.assertContains(part_info, formatted)
+
+        edit_url = reverse(
+            "bom:customer-price-edit", kwargs={"customer_price_id": row.id}
+        )
+        edit_get = self.client.get(edit_url)
+        self.assertEqual(edit_get.status_code, 200)
+        self.assertRegex(
+            edit_get.content.decode(),
+            r'name="quantity"[^>]*class="[^"]*bom-price-input',
+        )
 
     def test_preview_shows_bom_overview(self):
         part_revision = self.part.latest()

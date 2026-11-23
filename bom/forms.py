@@ -83,6 +83,12 @@ _PRICE_INPUT_ATTRS = {
     "autocomplete": "off",
 }
 
+_WHOLE_INPUT_ATTRS = {
+    "class": "bom-price-input",
+    "inputmode": "numeric",
+    "autocomplete": "off",
+}
+
 
 class GroupedDecimalField(forms.DecimalField):
     """DecimalField that accepts thousands-separated price strings."""
@@ -110,6 +116,26 @@ class GroupedDecimalField(forms.DecimalField):
             return f"{int(amount)}"
         # Plain digits; bom-price-input JS adds thousands separators.
         return f"{amount:.{places}f}"
+
+    def to_python(self, value):
+        return super().to_python(normalize_grouped_number(value))
+
+
+class GroupedIntegerField(forms.IntegerField):
+    """IntegerField that accepts thousands-separated strings (bom-price-input JS)."""
+
+    widget = forms.TextInput(attrs=_WHOLE_INPUT_ATTRS)
+
+    def prepare_value(self, value):
+        # Plain digits; bom-price-input JS adds thousands separators.
+        if value in (None, ""):
+            return value
+        if isinstance(value, str):
+            return value
+        try:
+            return str(int(value))
+        except (TypeError, ValueError):
+            return value
 
     def to_python(self, value):
         return super().to_python(normalize_grouped_number(value))
@@ -1175,7 +1201,7 @@ class CustomerPriceConfirmForm(forms.Form):
     profit_percent = forms.DecimalField(required=False, min_value=0)
     price = GroupedDecimalField(required=True, min_value=0)
     reference_price = GroupedDecimalField(required=False, min_value=0)
-    quantity = forms.IntegerField(
+    quantity = GroupedIntegerField(
         required=True,
         min_value=1,
         initial=1,
@@ -1307,7 +1333,7 @@ class CustomerPriceEditForm(forms.Form):
     """Minimal edit for an existing CustomerPrice row (admin)."""
 
     price = GroupedDecimalField(required=True, min_value=0, label=_("Price"))
-    quantity = forms.IntegerField(
+    quantity = GroupedIntegerField(
         required=True,
         min_value=1,
         label=_("Order quantity (kg)"),

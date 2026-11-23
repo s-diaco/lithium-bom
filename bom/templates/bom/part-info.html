@@ -4,6 +4,7 @@
 {% load djmoney %}
 {% load bom_dates %}
 {% load bom_forms %}
+{% load bom_i18n %}
 
 {% block head-title %}{{ part.full_part_number }}{% if part_revision %} {{ part_revision.description }}{% endif %}{% endblock %}
 
@@ -366,11 +367,11 @@
                             <thead>
                             <tr>
                                 <th class="text-normal td-med">{% trans "Customer" %}</th>
-                                <th class="text-normal td-med">{% trans "BoM Cost" %}</th>
-                                <th class="text-normal td-med">{% trans "Confirmed profit %" %}</th>
-                                <th class="text-normal td-med">{% trans "Current profit %" %}</th>
-                                <th class="text-normal td-med">{% trans "Price" %}</th>
-                                <th class="text-normal td-med">{% trans "Order quantity (kg)" %}</th>
+                                <th class="text-normal td-med">{% trans "BoM Cost" %}<br>({% firstof currency_unit_txt organization.currency|currency_label %})</th>
+                                <th class="text-normal td-med">{% trans "Confirmed profit" %}<br>({% percent_unit %})</th>
+                                <th class="text-normal td-med">{% trans "Current profit" %}<br>({% percent_unit %})</th>
+                                <th class="text-normal td-med">{% trans "Price" %}<br>({% firstof currency_unit_txt organization.currency|currency_label %})</th>
+                                <th class="text-normal td-med">{% trans "Order quantity" %}<br>({% trans "kg" %})</th>
                                 <th class="text-normal td-med">{% trans "Created" %}</th>
                                 <th class="text-normal td-med">{% trans "Add Price" %}</th>
                                 <th class="text-normal td-small"></th>
@@ -382,11 +383,11 @@
                                     <td class="text-normal td-med">
                                         <a href="{% url 'bom:customer-info' customer_id=row.customer.id %}">{{ row.customer.name }}</a>
                                     </td>
-                                    <td class="text-normal td-med">{{ row.base_cost|default:"-" }}</td>
+                                    <td class="text-normal td-med">{{ row.base_cost|money_amount|default:"-" }}</td>
                                     <td class="text-normal td-med">{{ row.profit_percent }}</td>
                                     <td class="text-normal td-med">{{ row.current_profit_percent|default:"-" }}</td>
-                                    <td class="text-normal td-med">{{ row.price|default:"-" }}</td>
-                                    <td class="text-normal td-med">{{ row.quantity }}</td>
+                                    <td class="text-normal td-med">{{ row.price|money_amount|default:"-" }}</td>
+                                    <td class="text-normal td-med">{{ row.quantity|grouped_number }}</td>
                                     <td class="text-normal td-med">{% user_datetime row.created_at %}</td>
                                     <td class="text-normal td-med">
                                         <a class="bom-btn-ghost"

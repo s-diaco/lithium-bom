@@ -2,7 +2,7 @@ from django import template
 from django.utils.translation import gettext as _
 
 from bom.utils import currency_label as _currency_label
-from bom.utils import format_money_amount
+from bom.utils import format_grouped_integer, format_money_amount
 
 register = template.Library()
 
@@ -23,3 +23,9 @@ def percent_unit():
 def money_amount(value):
     """Format a Money/Decimal as grouped digits without a currency code."""
     return format_money_amount(value)
+
+
+@register.filter(name="grouped_number")
+def grouped_number(value):
+    """Format a whole number with thousands separators (e.g. order quantity kg)."""
+    return format_grouped_integer(value)
