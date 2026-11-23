@@ -10,8 +10,13 @@ bom_patterns = [
     path("", views.home, name="home"),
     path("materials/", views.materials, name="materials"),
     path(
+        "parts/part-number-suggest/",
+        views.part_number_suggest,
+        name="part-number-suggest",
+    ),
+    path(
         "materials/part-number-suggest/",
-        views.materials_part_number_suggest,
+        views.part_number_suggest,
         name="materials-part-number-suggest",
     ),
     path("report/", views.report, name="report"),

@@ -158,7 +158,7 @@
     <script>
         $(document).ready(function () {
             $('input.autocomplete').autocomplete({
-                source: '{% url "bom:materials-part-number-suggest" %}',
+                source: '{% url "bom:part-number-suggest" %}',
                 onAutocomplete: function (val) {
                     var form = document.getElementById("searchForm");
                     var input = document.getElementById("autocomplete-input");

@@ -93,7 +93,7 @@ from bom.models import (
 from bom.helpers import (
     build_part_search_q,
     resolve_home_part_jump,
-    suggest_part_numbers,
+    suggest_parts,
 )
 from bom.list_queries import (
     latest_part_revision_ids,
@@ -506,31 +506,36 @@ def materials(request):
     return TemplateResponse(request, "bom/dashboard.html", locals())
 
 
-MATERIALS_PN_SUGGEST_MIN_LEN = 1
-MATERIALS_PN_SUGGEST_DEFAULT_LIMIT = 15
-MATERIALS_PN_SUGGEST_MAX_LIMIT = 50
+PART_SUGGEST_MIN_LEN = 1
+PART_SUGGEST_DEFAULT_LIMIT = 15
+PART_SUGGEST_MAX_LIMIT = 50
 
 
 @login_required(login_url=BOM_LOGIN_URL)
-def materials_part_number_suggest(request):
-    """JSON typeahead for materials search: part numbers only, org-scoped."""
+def part_number_suggest(request):
+    """Shared organization-scoped part-number and description typeahead."""
     profile = request.user.bom_profile()
     organization = profile.organization
     if not organization:
         return JsonResponse({"results": []}, status=400)
 
     query = (request.GET.get("q") or "").strip()
-    if len(query) < MATERIALS_PN_SUGGEST_MIN_LEN:
+    if len(query) < PART_SUGGEST_MIN_LEN:
         return JsonResponse({"results": []})
 
     try:
-        limit = int(request.GET.get("limit") or MATERIALS_PN_SUGGEST_DEFAULT_LIMIT)
+        limit = int(request.GET.get("limit") or PART_SUGGEST_DEFAULT_LIMIT)
     except (TypeError, ValueError):
-        limit = MATERIALS_PN_SUGGEST_DEFAULT_LIMIT
-    limit = max(1, min(limit, MATERIALS_PN_SUGGEST_MAX_LIMIT))
+        limit = PART_SUGGEST_DEFAULT_LIMIT
+    limit = max(1, min(limit, PART_SUGGEST_MAX_LIMIT))
+
+    try:
+        exclude_part_id = int(request.GET.get("exclude_part_id", ""))
+    except (TypeError, ValueError):
+        exclude_part_id = None
 
     return JsonResponse(
-        {"results": suggest_part_numbers(organization, query, limit=limit)}
+        {"results": suggest_parts(organization, query, limit, exclude_part_id)}
     )
 
 

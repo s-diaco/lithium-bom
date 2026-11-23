@@ -46,12 +46,19 @@ class HomeTestsMixin:
         html = response.content.decode("utf-8")
         self.assertIn("bom-hub-jump", html)
         self.assertIn('id="id_q"', html)
-        self.assertIn(".autocomplete(", html)
-        self.assertIn(p1.full_part_number(), html)
-        self.assertIn(p2.full_part_number(), html)
-        self.assertIn("Home jump description", html)
+        self.assertIn(reverse("bom:part-number-suggest"), html)
+        self.assertIn('data-autocomplete-submit="true"', html)
+        self.assertNotIn(p1.full_part_number(), html)
+        self.assertNotIn(p2.full_part_number(), html)
+        self.assertNotIn("Home jump description", html)
         self.assertNotIn("with_loi", html)
-        self.assertIn("form.submit()", html)
+        suggestions = self.client.get(
+            reverse("bom:part-number-suggest"), {"q": "Home jump description"}
+        )
+        self.assertEqual(suggestions.json()["results"], [{
+            "value": p1.full_part_number(),
+            "label": f"{p1.full_part_number()} ┆ Home jump description",
+        }])
 
     def test_home(self):
         response = self.client.post(reverse("bom:materials"))

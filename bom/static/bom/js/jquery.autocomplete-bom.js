@@ -26,14 +26,16 @@
           matches = matches.slice(0, options.limit);
         }
         $list.empty();
-        matches.forEach(function (k) {
-          var $li = $("<li></li>").text(k);
+        matches.forEach(function (item) {
+          var label = typeof item === "string" ? item : item.label;
+          var value = typeof item === "string" ? item : item.value;
+          var $li = $('<li role="option"></li>').text(label);
           $li.on("mousedown", function (e) {
             e.preventDefault();
             if (typeof options.onAutocomplete === "function") {
-              options.onAutocomplete(k);
+              options.onAutocomplete(value);
             } else {
-              $input.val(k);
+              $input.val(value);
             }
             close();
           });
@@ -56,7 +58,7 @@
       function runSuggest(q) {
         if (sourceUrl) {
           var seq = ++requestSeq;
-          $.getJSON(sourceUrl, { q: q })
+          $.getJSON(sourceUrl, { q: q, limit: options.limit })
             .done(function (resp) {
               if (seq !== requestSeq) {
                 return;
@@ -76,13 +78,12 @@
 
       $input.on("input", function () {
         var q = String($input.val() || "");
+        requestSeq += 1;
+        close();
+        clearTimeout(debounceTimer);
         if (q.length < minLength) {
-          requestSeq += 1;
-          clearTimeout(debounceTimer);
-          close();
           return;
         }
-        clearTimeout(debounceTimer);
         if (debounceMs > 0) {
           debounceTimer = setTimeout(function () {
             runSuggest(q);
@@ -93,8 +94,28 @@
       });
 
       $input.on("blur", function () {
+        requestSeq += 1;
+        clearTimeout(debounceTimer);
         setTimeout(close, 150);
       });
     });
   };
+
+  $(function () {
+    $("input[data-part-autocomplete]").each(function () {
+      var input = this;
+      $(input).autocomplete({
+        source: input.getAttribute("data-part-autocomplete"),
+        limit: Number(input.getAttribute("data-autocomplete-limit")),
+        minLength: 1,
+        debounce: 200,
+        onAutocomplete: function (value) {
+          $(input).val(value);
+          if (input.getAttribute("data-autocomplete-submit") === "true") {
+            input.form.submit();
+          }
+        },
+      });
+    });
+  });
 })(jQuery);
