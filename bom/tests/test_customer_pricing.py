@@ -8,7 +8,13 @@ from django.urls import reverse
 from django.utils import translation
 from djmoney.money import Money
 
-from bom.forms import _resolve_customer_for_organization
+from unittest.mock import patch
+
+from bom.forms import (
+    CustomerPriceLoadForm,
+    _part_autocomplete_label,
+    _resolve_customer_for_organization,
+)
 
 from bom.helpers import (
     create_a_fake_customer,
@@ -19,7 +25,7 @@ from bom.helpers import (
     create_some_fake_sellers,
     create_user_and_organization,
 )
-from bom.models import Customer, CustomerPrice, Organization, User
+from bom.models import Customer, CustomerPrice, Organization, Part, User
 from bom.utils import (
     apply_profit,
     attach_current_profit_percents,
@@ -452,6 +458,20 @@ class TestCustomerPricing(TransactionTestCase):
         response = self.client.get(reverse("bom:materials"))
         self.assertEqual(response.status_code, 200)
         self.assertNotIn(reverse("bom:customers"), response.content.decode())
+
+    def test_customer_price_load_form_part_autocomplete_avoids_verbose_str(self):
+        """Material picker on customer-info must not call verbose_str()/BOM cost."""
+        form = CustomerPriceLoadForm(
+            organization=self.organization, customer=self.customer
+        )
+        widget = form.fields["part"].widget
+        self.assertIs(widget.verbose_string_function, _part_autocomplete_label)
+        self.assertIn("_autocomplete_synopsis", widget.queryset.query.annotations)
+        with patch.object(
+            Part, "verbose_str", side_effect=AssertionError("BOM label path")
+        ):
+            html = widget.render("part", None, attrs={})
+        self.assertIn(self.part.full_part_number(), html)
 
     def test_admin_can_view_customer_prices(self):
         row = create_a_fake_customer_price(

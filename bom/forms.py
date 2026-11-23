@@ -1128,16 +1128,14 @@ class CustomerPriceLoadForm(forms.Form):
                 ),
             )
         else:
+            # Cheap PN+description labels — never verbose_str()/latest()/BOM cost
+            # (that path timed out gunicorn on /customer/<id>/ with large orgs).
             self.fields["part"] = forms.CharField(
                 label=_("Material"),
                 required=True,
                 widget=AutocompleteTextInput(
-                    queryset=Part.objects.filter(
-                        organization=self.organization
-                    ).order_by(
-                        "number_class__code", "number_item", "number_variation"
-                    ),
-                    verbose_string_function=lambda part: part.verbose_str(),
+                    queryset=_parts_autocomplete_queryset(self.organization),
+                    verbose_string_function=_part_autocomplete_label,
                     autocomplete_min_length=0,
                     autocomplete_limit=12,
                     attrs={"class": "bom-input", "dir": "ltr"},
