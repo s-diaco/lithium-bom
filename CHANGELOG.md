@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.2](https://github.com/s-diaco/lithium-bom/compare/v3.3.1...v3.3.2) (2026-11-23)
+
+
+### Bug Fixes
+
+* keep release versions synchronized with uv lockfile ([#234](https://github.com/s-diaco/lithium-bom/issues/234)) ([ab8394b](https://github.com/s-diaco/lithium-bom/commit/ab8394b4756d1d53cee6796d87100523a3a544d0))
+
 ## [3.3.1](https://github.com/s-diaco/lithium-bom/compare/v3.3.0...v3.3.1) (2026-11-23)
 
 
