@@ -231,7 +231,8 @@ class SystemGroupBomParseTests(TestCase):
         self.assertEqual(bom.bom_id, "39485")
         self.assertEqual(bom.parent_part_number, "1155F229")
         self.assertEqual(bom.parent_revision, "A2*10-C")
-        self.assertIn("1155F229", bom.parent_description)
+        # Parent description from «نام کالا» / txtBomPartName (not Title composite).
+        self.assertEqual(bom.parent_description, "فریت اپک انگوب")
         self.assertEqual(len(bom.lines), 3)
         self.assertEqual(bom.lines[0].part_number, "003-00")
         self.assertEqual(bom.lines[0].quantity, "70")
@@ -299,7 +300,8 @@ class SystemGroupBomListParseTests(TestCase):
         # کد کالا / PartCode → PN; Number tail after PN (+ optional /) → rev.
         self.assertEqual(entries[0].part_number, "1155F229")
         self.assertEqual(entries[0].revision, "A2*10-C")
-        self.assertIn("1155F229", entries[0].description)
+        # Description from «نام کالا» / PartName (not «عنوان BOM» / Title).
+        self.assertEqual(entries[0].description, "فریت اپک انگوب")
         # Number equals PartCode → empty revision.
         self.assertEqual(entries[1].bom_id, "39484")
         self.assertEqual(entries[1].part_number, "CGM5883")
