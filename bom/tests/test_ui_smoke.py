@@ -354,7 +354,15 @@ class TestUiSmoke(TransactionTestCase):
         products = self.client.get(reverse("bom:materials"), {"product": "1"})
         self.assertEqual(products.status_code, 200)
         products_html = products.content.decode("utf-8")
-        self.assertIn(product_pt.name, products_html)
+        # {% trans product_type.name %} — en "Frit" / fa "فریت" (and other types).
+        from django.utils.translation import override, gettext
+
+        with override("fa_IR"):
+            fa_type_name = gettext(product_pt.name)
+        self.assertTrue(
+            product_pt.name in products_html or fa_type_name in products_html,
+            f"material type missing (en={product_pt.name!r} fa={fa_type_name!r})",
+        )
         self.assertRegex(
             products_html,
             r"<th[^>]*>\s*(Material Type|نوع متریال)\s*</th>",
