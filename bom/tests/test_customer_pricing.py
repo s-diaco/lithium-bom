@@ -774,15 +774,13 @@ class TestCustomerPricing(TransactionTestCase):
         )
         self.assertEqual(response.status_code, 200)
         html = response.content.decode()
-        self.assertTrue(
-            "Confirmed profit %" in html
-            or "سود تأیید شده ٪" in html
-            or "درصد سود تأییدشده" in html
+        self.assertRegex(
+            html,
+            r"Confirmed profit<br>\(%\)|سود تأیید شده<br>\(درصد\)",
         )
-        self.assertTrue(
-            "Current profit %" in html
-            or "سود فعلی ٪" in html
-            or "درصد سود فعلی" in html
+        self.assertRegex(
+            html,
+            r"Current profit<br>\(%\)|سود فعلی<br>\(درصد\)",
         )
         annotated = response.context["customer_prices"]
         self.assertEqual(len(annotated), 1)
@@ -812,15 +810,13 @@ class TestCustomerPricing(TransactionTestCase):
         )
         self.assertEqual(response.status_code, 200)
         html = response.content.decode()
-        self.assertTrue(
-            "Confirmed profit %" in html
-            or "سود تأیید شده ٪" in html
-            or "درصد سود تأییدشده" in html
+        self.assertRegex(
+            html,
+            r"Confirmed profit<br>\(%\)|سود تأیید شده<br>\(درصد\)",
         )
-        self.assertTrue(
-            "Current profit %" in html
-            or "سود فعلی ٪" in html
-            or "درصد سود فعلی" in html
+        self.assertRegex(
+            html,
+            r"Current profit<br>\(%\)|سود فعلی<br>\(درصد\)",
         )
         latest = response.context["latest_prices"]
         self.assertEqual(len(latest), 1)
