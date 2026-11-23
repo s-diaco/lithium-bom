@@ -310,7 +310,7 @@ class TestUiSmoke(TransactionTestCase):
         self.assertIn('action="/materials/"', materials_html)
 
     def test_materials_list_description_under_part_number(self):
-        """Part number cell stacks description + type-aware meta; no Material column."""
+        """Two-line primary cell; type-aware meta in its own column (not under desc)."""
         from bom.models import PartRevision, SellerPart
 
         user, organization = create_user_and_organization()
@@ -320,7 +320,7 @@ class TestUiSmoke(TransactionTestCase):
         self.client.login(username="kasper", password="ghostpassword")
         parts = create_some_fake_parts(organization=organization)
 
-        # Raw list (empty Material Type): seller name · seller code under description.
+        # Raw list: seller · code in meta column; no Seller / Seller Part Number columns.
         SellerPart.objects.filter(manufacturer_part__part=parts[0]).update(
             seller_part_number="SPN-RAW-1"
         )
@@ -329,15 +329,21 @@ class TestUiSmoke(TransactionTestCase):
         raw_html = raw.content.decode("utf-8")
         self.assertIn("part-primary-desc", raw_html)
         self.assertIn("Brown dog", raw_html)
-        self.assertIn("part-primary-meta", raw_html)
+        self.assertNotIn("part-primary-meta", raw_html)
         self.assertRegex(raw_html, r"Mouser\s*·\s*SPN-RAW-1|Digi-Key\s*·\s*SPN-RAW-1")
         self.assertNotRegex(
             raw_html,
             r"<th[^>]*>\s*(Material|متریال)\s*</th>",
             "Material column header should be removed from materials list",
         )
+        self.assertNotRegex(
+            raw_html,
+            r"<th[^>]*>\s*(Seller Part Number|کد فروشنده)\s*</th>",
+        )
+        # Raw filter uses Seller as the meta column header (not a second Seller column).
+        self.assertEqual(len(re.findall(r"<th[^>]*>\s*(Seller|فروشنده)\s*</th>", raw_html)), 1)
 
-        # Products: material type name under description.
+        # Products: material type in meta column.
         organization.ensure_default_product_types()
         product_pt = next(
             pt for pt in organization.product_types.all() if pt.has_bom
@@ -348,12 +354,15 @@ class TestUiSmoke(TransactionTestCase):
         products = self.client.get(reverse("bom:materials"), {"product": "1"})
         self.assertEqual(products.status_code, 200)
         products_html = products.content.decode("utf-8")
-        self.assertIn("part-primary-meta", products_html)
         self.assertIn(product_pt.name, products_html)
+        self.assertRegex(
+            products_html,
+            r"<th[^>]*>\s*(Material Type|نوع متریال)\s*</th>",
+        )
 
         css = open("bom/static/bom/css/style.css").read()
         self.assertIn(".part-list .part-primary-desc", css)
-        self.assertIn(".part-list .part-primary-meta", css)
+        self.assertNotIn(".part-list .part-primary-meta", css)
 
     def test_authenticated_navigation_and_dashboard(self):
         user, organization = create_user_and_organization()

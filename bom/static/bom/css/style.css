@@ -77,9 +77,8 @@ td, tr {
     white-space: nowrap;
 }
 
-/* Desc + type-aware meta under part/material code (overrides .single-line). */
-.part-list .part-primary-desc,
-.part-list .part-primary-meta {
+/* Description under part/material code (overrides .single-line). */
+.part-list .part-primary-desc {
     white-space: normal;
 }
 
