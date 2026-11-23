@@ -2397,7 +2397,13 @@ class PartRevisionForm(forms.ModelForm):
             required=True,
             label=_("Description"),
             widget=AutocompleteTextInput(
-                queryset=PartRevision.objects.values_list("description", flat=True),
+                queryset=(
+                    PartRevision.objects.filter(part__organization=org)
+                    .values_list("description", flat=True)
+                    .distinct()
+                    if org is not None
+                    else PartRevision.objects.none()
+                ),
                 autocomplete_min_length=1,
                 autocomplete_limit=8,
             ),
