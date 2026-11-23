@@ -309,7 +309,9 @@ Use [Conventional Commits](https://www.conventionalcommits.org/) on PR titles (s
 
 `chore:`, `docs:`, and similar types are folded into the next release changelog; they do not open a release by themselves. Prefer `fix:` when a maintenance change should cut a patch.
 
-Releases are handled by [release-please](https://github.com/googleapis/release-please): merges to `main` open or update a release PR that bumps `pyproject.toml`, updates `CHANGELOG.md`, and (when that PR is merged) creates the GitHub release/tag (`vX.Y.Z`). Do not bump the version inside feature PRs.
+Releases are handled by [release-please](https://github.com/googleapis/release-please): merges to `main` open or update a release PR that bumps `pyproject.toml` and the local `lithium-bom` package version in `uv.lock`, updates `CHANGELOG.md`, and (when that PR is merged) creates the GitHub release/tag (`vX.Y.Z`). Dependency pins are unchanged by a release version bump. Do not bump the version inside feature PRs.
+
+CI runs `uv lock --check` before installing Python dependencies, matching Docker's locked-install requirement. After changing dependencies, run `uv lock` and commit `uv.lock` alongside `pyproject.toml`.
 
 ## Installation Pitfalls
 
