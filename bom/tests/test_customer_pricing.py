@@ -12,7 +12,6 @@ from unittest.mock import patch
 
 from bom.forms import (
     CustomerPriceLoadForm,
-    _part_autocomplete_label,
     _resolve_customer_for_organization,
 )
 
@@ -464,14 +463,13 @@ class TestCustomerPricing(TransactionTestCase):
         form = CustomerPriceLoadForm(
             organization=self.organization, customer=self.customer
         )
-        widget = form.fields["part"].widget
-        self.assertIs(widget.verbose_string_function, _part_autocomplete_label)
-        self.assertIn("_autocomplete_synopsis", widget.queryset.query.annotations)
-        with patch.object(
+        with self.assertNumQueries(0), patch.object(
             Part, "verbose_str", side_effect=AssertionError("BOM label path")
-        ):
-            html = widget.render("part", None, attrs={})
-        self.assertIn(self.part.full_part_number(), html)
+        ), patch.object(Part, "latest", side_effect=AssertionError("Revision lookup")):
+            html = str(form["part"])
+        self.assertIn(reverse("bom:part-number-suggest"), html)
+        self.assertNotIn(self.part.full_part_number(), html)
+        self.assertNotIn("JSON.parse", html)
 
     def test_admin_can_view_customer_prices(self):
         row = create_a_fake_customer_price(

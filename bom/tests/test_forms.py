@@ -1,8 +1,9 @@
+from unittest.mock import patch
+
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.db import connection
 from django.test import Client, TestCase, override_settings
-from django.test.utils import CaptureQueriesContext
+from django.urls import reverse
 from django.utils import translation
 from django.utils.translation import gettext
 
@@ -24,6 +25,7 @@ from bom.helpers import (
     create_some_fake_manufacturers,
     create_some_fake_part_classes,
     create_some_fake_parts,
+    suggest_parts,
 )
 from bom.models import Organization, Part, PartRevision, Seller
 from bom.utils import currency_label, normalize_grouped_number
@@ -216,13 +218,22 @@ class TestForms(TestCase):
         p2_rev.material = "with_loi"
         p2_rev.description = "Known subpart description"
         p2_rev.save()
-        with CaptureQueriesContext(connection) as ctx:
+        with self.assertNumQueries(0), patch.object(
+            Part, "latest", side_effect=AssertionError("Revision lookup during render")
+        ):
             form = AddSubpartForm(organization=self.organization, part_id=p1.id)
             html = str(form["subpart_part_number"])
-        self.assertLessEqual(len(ctx), 5)
-        self.assertIn(p2.full_part_number(), html)
-        self.assertIn(p2_rev.description, html)
+        self.assertIn(reverse("bom:part-number-suggest"), html)
+        self.assertIn(f"exclude_part_id={p1.id}", html)
+        self.assertNotIn(p2.full_part_number(), html)
+        self.assertNotIn(p2_rev.description, html)
         self.assertNotIn("with_loi", html)
+        with self.assertNumQueries(1):
+            matches = suggest_parts(self.organization, "Known", exclude_part_id=p1.id)
+        self.assertIn(
+            {"value": p2.full_part_number(), "label": f"{p2.full_part_number()} ┆ Known subpart description"},
+            matches,
+        )
 
     def test_home_jump_form_autocomplete_labels(self):
         (p1, p2, _p3, _p4) = create_some_fake_parts(organization=self.organization)
@@ -230,14 +241,29 @@ class TestForms(TestCase):
         rev.material = "with_loi"
         rev.description = "Known home jump description"
         rev.save()
-        form = HomeJumpForm(organization=self.organization)
-        html = str(form["q"])
-        self.assertIn(p1.full_part_number(), html)
-        self.assertIn(p2.full_part_number(), html)
-        self.assertIn("Known home jump description", html)
+        with self.assertNumQueries(0):
+            form = HomeJumpForm(organization=self.organization)
+            html = str(form["q"])
+        self.assertIn(reverse("bom:part-number-suggest"), html)
+        self.assertNotIn(p1.full_part_number(), html)
+        self.assertNotIn(p2.full_part_number(), html)
+        self.assertNotIn("Known home jump description", html)
         self.assertNotIn("with_loi", html)
-        self.assertIn("form.submit()", html)
+        self.assertIn('data-autocomplete-submit="true"', html)
         self.assertIn('name="q"', html)
+
+    def test_part_autocomplete_supports_prefixes_and_custom_ids_without_queries(self):
+        with self.assertNumQueries(0):
+            form = HomeJumpForm(
+                organization=self.organization,
+                prefix="jump",
+                auto_id="custom_%s",
+            )
+            html = str(form["q"])
+        self.assertIn('name="jump-q"', html)
+        self.assertIn('id="custom_jump-q"', html)
+        self.assertIn(reverse("bom:part-number-suggest"), html)
+        self.assertNotIn("<script", html)
 
     def test_add_sellerpart_form(self):
         (p1, p2, p3, p4) = create_some_fake_parts(organization=self.organization)

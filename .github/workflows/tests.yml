@@ -15,6 +15,8 @@ jobs:
           cache: npm
       - name: Install frontend dependencies
         run: npm ci
+      - name: Test autocomplete behavior
+        run: node --test bom/tests/js/*.test.cjs
       - name: Build Tailwind CSS
         run: npm run build:css
       - name: Compiled CSS exists

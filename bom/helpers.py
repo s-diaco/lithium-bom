@@ -1,7 +1,7 @@
 import operator
 from functools import reduce
 
-from django.db.models import Q
+from django.db.models import OuterRef, Q, Subquery
 
 from bom import constants
 from bom.models import (
@@ -77,33 +77,36 @@ def build_part_search_q(search_terms, organization):
     )
 
 
-def suggest_part_numbers(organization, query, limit=15):
-    """Return org-scoped part numbers matching ``query`` (part-number fields only).
-
-    Does not match synopsis, MPN, or manufacturer names. Callers should enforce
-    min length before hitting the DB; empty/short queries return [].
-    """
+def suggest_parts(organization, query, limit=15, exclude_part_id=None):
+    """Bounded PN + highest-ID revision description suggestions; never cost BOMs."""
     query = (query or "").strip()
-    if not query or limit <= 0:
+    if organization is None or not query or limit <= 0:
         return []
-
-    # Over-fetch a little so post-filter on the display string still fills limit.
-    fetch_cap = min(max(limit * 3, limit), 100)
+    limit = min(limit, 50)
+    latest_description = (
+        PartRevision.objects.filter(part_id=OuterRef("pk"))
+        .order_by("-id")
+        .values("description")[:1]
+    )
     parts = (
         Part.objects.filter(organization=organization)
-        .filter(_part_number_partial_q(query, organization))
         .select_related("organization", "number_class")
-        .order_by("number_class__code", "number_item", "number_variation")[:fetch_cap]
+        .annotate(_autocomplete_synopsis=Subquery(latest_description))
+        .filter(
+            _part_number_partial_q(query, organization)
+            | Q(_autocomplete_synopsis__icontains=query)
+        )
+        .order_by("number_class__code", "number_item", "number_variation", "pk")
     )
-    needle = query.lower()
-    results = []
-    for part in parts:
-        pn = part.full_part_number()
-        if needle in pn.lower():
-            results.append(pn)
-            if len(results) >= limit:
-                break
-    return results
+    if exclude_part_id is not None:
+        parts = parts.exclude(pk=exclude_part_id)
+    return [
+        {
+            "value": part.full_part_number(),
+            "label": f"{part.full_part_number()} ┆ {part._autocomplete_synopsis or ''}",
+        }
+        for part in parts[:limit]
+    ]
 
 
 def resolve_home_part_jump(query, organization):

@@ -296,7 +296,12 @@ class TestUiSmoke(TransactionTestCase):
         self.assertIn('action="/"', hub_html)
         self.assertIn('name="q"', hub_html)
         self.assertIn('id="id_q"', hub_html)
-        self.assertIn(".autocomplete(", hub_html)
+        self.assertIn(
+            'data-part-autocomplete="' + reverse("bom:part-number-suggest"), hub_html
+        )
+        self.assertIn('data-autocomplete-limit="8"', hub_html)
+        self.assertIn('data-autocomplete-submit="true"', hub_html)
+        self.assertIn("bom/js/jquery.autocomplete-bom.js", hub_html)
         self.assertIn('href="/"', hub_html)
         self.assertTrue(
             'title="Lithium |' in hub_html or 'title="لیتیوم |' in hub_html,

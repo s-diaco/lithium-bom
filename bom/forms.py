@@ -12,7 +12,6 @@ from django.core.validators import (
     MinLengthValidator,
 )
 from django.db import IntegrityError
-from django.db.models import OuterRef, Subquery
 from django.forms.models import BaseModelFormSet, modelformset_factory, model_to_dict
 from django.utils import timezone
 from django.utils.translation import gettext, gettext_lazy as _
@@ -44,6 +43,7 @@ from .csv_headers import (
     PartClassesCSVHeaders,
 )
 from .form_fields import AutocompleteTextInput
+from .part_autocomplete import PartAutocompleteTextInput
 from .widgets import MaterialTypePicker
 from .models import (
     Assembly,
@@ -1133,11 +1133,8 @@ class CustomerPriceLoadForm(forms.Form):
             self.fields["part"] = forms.CharField(
                 label=_("Material"),
                 required=True,
-                widget=AutocompleteTextInput(
-                    queryset=_parts_autocomplete_queryset(self.organization),
-                    verbose_string_function=_part_autocomplete_label,
-                    autocomplete_min_length=0,
-                    autocomplete_limit=12,
+                widget=PartAutocompleteTextInput(
+                    limit=12,
                     attrs={"class": "bom-input", "dir": "ltr"},
                 ),
             )
@@ -2552,28 +2549,6 @@ class SubpartForm(forms.ModelForm):
         return cleaned_data
 
 
-def _part_autocomplete_label(part):
-    return f"{part.full_part_number()} ┆ {part._autocomplete_synopsis or ''}"
-
-
-def _parts_autocomplete_queryset(organization, exclude_part_id=None):
-    """Part queryset for PN + description autocomplete (no material codes)."""
-    latest_description = (
-        PartRevision.objects.filter(part_id=OuterRef("pk"))
-        .order_by("-id")
-        .values("description")[:1]
-    )
-    qs = (
-        Part.objects.filter(organization=organization)
-        .select_related("organization", "number_class")
-        .annotate(_autocomplete_synopsis=Subquery(latest_description))
-        .order_by("number_class__code", "number_item", "number_variation")
-    )
-    if exclude_part_id is not None:
-        qs = qs.exclude(id=exclude_part_id)
-    return qs
-
-
 class HomeJumpForm(forms.Form):
     """Compact Home hub jump-to: part-number autocomplete, submits as GET ``q``."""
 
@@ -2583,12 +2558,9 @@ class HomeJumpForm(forms.Form):
         self.fields["q"] = forms.CharField(
             required=False,
             label=_("Part number"),
-            widget=AutocompleteTextInput(
-                queryset=_parts_autocomplete_queryset(self.organization),
-                verbose_string_function=_part_autocomplete_label,
-                autocomplete_limit=8,
-                autocomplete_min_length=1,
-                autocomplete_submit=True,
+            widget=PartAutocompleteTextInput(
+                limit=8,
+                submit=True,
                 attrs={
                     "class": "bom-input",
                     "dir": "ltr",
@@ -2611,11 +2583,8 @@ class AddSubpartForm(forms.Form):
         self.fields["subpart_part_number"] = forms.CharField(
             required=True,
             label=_("Subpart part number"),
-            widget=AutocompleteTextInput(
-                queryset=_parts_autocomplete_queryset(
-                    self.organization, exclude_part_id=self.part_id
-                ),
-                verbose_string_function=_part_autocomplete_label,
+            widget=PartAutocompleteTextInput(
+                exclude_part_id=self.part_id,
                 attrs={"dir": "ltr"},
             ),
         )
