@@ -1,5 +1,7 @@
 /* Local Material Symbols (used as .material-icons ligatures).
-   font-display: block — hide ligature text until the icon font paints (avoids FOUT of "home"/"menu"). */
+   font-display: block covers the short block window; the ~3.9MB woff2 often
+   finishes later, so .material-icons stay visibility:hidden until
+   html.material-icons-ready (set by base.html after document.fonts.load). */
 @font-face {
   font-family: 'Material Icons';
   font-style: normal;
@@ -21,6 +23,18 @@
   word-wrap: normal;
   direction: ltr;
   -webkit-font-smoothing: antialiased;
+  /* Hide ligature names until the icon face is actually ready (not just past block). */
+  visibility: hidden;
+}
+
+html.material-icons-ready .material-icons {
+  visibility: visible;
+}
+
+@media print {
+  .material-icons {
+    visibility: visible;
+  }
 }
 
 /* Sit level with adjacent body text (glyph sits high in the Material Symbols em box). */

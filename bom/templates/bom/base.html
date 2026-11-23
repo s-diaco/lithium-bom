@@ -29,10 +29,23 @@
       }
     })();
     </script>
+    {# Critical: hide icon ligatures before material-icons.css arrives / before font loads. #}
+    <style>.material-icons{visibility:hidden}html.material-icons-ready .material-icons{visibility:visible}</style>
+    <noscript><style>.material-icons{visibility:visible}</style></noscript>
     <link href="{% static 'bom/css/material-icons.css' %}" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'bom/css/app.css' %}">
-    {# Icon font first — large woff2; preload + font-display:block prevents ligature-text FOUT. #}
+    {# Icon font first — large woff2; preload + hide-until-ready prevents ligature-text FOUT. #}
     <link rel="preload" href="{% static 'bom/font/MaterialSymbolsRounded[FILL,GRAD,opsz,wght].woff2' %}" as="font" type="font/woff2" crossorigin>
+    <script>
+    (function () {
+      function ready() { document.documentElement.classList.add("material-icons-ready"); }
+      try {
+        if (!document.fonts || !document.fonts.load) { ready(); return; }
+        document.fonts.load('24px "Material Icons"').then(ready, ready);
+        setTimeout(ready, 10000);
+      } catch (e) { ready(); }
+    })();
+    </script>
     {# Warm print face early — Chrome print preview often paints Vazirmatn if Parastoo is still unloaded. #}
     <link rel="preload" href="{% static 'bom/font/Parastoo.woff2' %}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{% static 'bom/font/Parastoo-Bold.woff2' %}" as="font" type="font/woff2" crossorigin>
