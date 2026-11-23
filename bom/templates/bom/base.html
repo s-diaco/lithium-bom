@@ -29,8 +29,8 @@
       }
     })();
     </script>
-    {# Critical: hide icon ligatures before material-icons.css arrives / before font loads. #}
-    <style>.material-icons{visibility:hidden}html.material-icons-ready .material-icons{visibility:visible}</style>
+    {# Critical: hide ligatures + reserve 1em box before CSS/font (avoids navbar reflow). #}
+    <style>.material-icons{display:inline-block;visibility:hidden;width:1em;height:1em;overflow:hidden;flex-shrink:0;line-height:1;vertical-align:middle}html.material-icons-ready .material-icons{visibility:visible}</style>
     <noscript><style>.material-icons{visibility:visible}</style></noscript>
     <link href="{% static 'bom/css/material-icons.css' %}" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'bom/css/app.css' %}">
