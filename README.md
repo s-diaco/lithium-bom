@@ -297,6 +297,8 @@ To update rates, migrate and run `python manage.py update_rates`. Some day we wi
 
 ## Contributing
 
+Cloud agents: follow `.cursor/skills/conventional-pr-titles/SKILL.md` for release-please PR titles.
+
 Use [Conventional Commits](https://www.conventionalcommits.org/) on PR titles (squash merges use the title as the release commit):
 
 | Prefix | Semver bump |
