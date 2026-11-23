@@ -1280,18 +1280,21 @@ class TestCustomerPricing(TransactionTestCase):
         self.assertEqual(row.quantity, 250)
         self.assertEqual(row.note, "qty order")
 
+        qty_header = re.compile(
+            r"Order quantity<br>\(kg\)|مقدار سفارش<br>\(کیلوگرم\)"
+        )
         customer_info = self.client.get(
             reverse("bom:customer-info", kwargs={"customer_id": self.customer.id})
         )
         self.assertEqual(customer_info.status_code, 200)
-        self.assertContains(customer_info, "مقدار سفارش (کیلوگرم)")
+        self.assertRegex(customer_info.content.decode(), qty_header)
         self.assertContains(customer_info, "250")
 
         part_info = self.client.get(
             reverse("bom:part-info", kwargs={"part_id": self.part.id})
         )
         self.assertEqual(part_info.status_code, 200)
-        self.assertContains(part_info, "مقدار سفارش (کیلوگرم)")
+        self.assertRegex(part_info.content.decode(), qty_header)
         self.assertContains(part_info, "250")
 
     def test_order_quantity_displays_thousands_separator(self):
