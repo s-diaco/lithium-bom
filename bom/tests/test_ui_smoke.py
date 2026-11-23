@@ -309,6 +309,71 @@ class TestUiSmoke(TransactionTestCase):
         self.assertIn("bom-action-bar", materials_html)
         self.assertIn('action="/materials/"', materials_html)
 
+    def test_materials_list_description_under_part_number(self):
+        """Two-line primary cell; type-aware meta in its own column (not under desc)."""
+        from bom.models import PartRevision, SellerPart
+
+        user, organization = create_user_and_organization()
+        profile = user.bom_profile(organization=organization)
+        profile.role = "A"
+        profile.save()
+        self.client.login(username="kasper", password="ghostpassword")
+        parts = create_some_fake_parts(organization=organization)
+
+        # Raw list: seller · code in meta column; no Seller / Seller Part Number columns.
+        SellerPart.objects.filter(manufacturer_part__part=parts[0]).update(
+            seller_part_number="SPN-RAW-1"
+        )
+        raw = self.client.get(reverse("bom:materials"), {"product": "0"})
+        self.assertEqual(raw.status_code, 200)
+        raw_html = raw.content.decode("utf-8")
+        self.assertIn("part-primary-desc", raw_html)
+        self.assertIn("Brown dog", raw_html)
+        self.assertNotIn("part-primary-meta", raw_html)
+        self.assertRegex(raw_html, r"Mouser\s*·\s*SPN-RAW-1|Digi-Key\s*·\s*SPN-RAW-1")
+        from django.utils.translation import gettext as _
+
+        seller_header = _("Seller")
+        seller_pn_header = _("Seller Part Number")
+        material_type_header = _("Material Type")
+        material_header = _("Material")
+        self.assertNotRegex(
+            raw_html,
+            rf"<th[^>]*>\s*{re.escape(material_header)}\s*</th>",
+            "Material column header should be removed from materials list",
+        )
+        self.assertNotRegex(
+            raw_html,
+            rf"<th[^>]*>\s*{re.escape(seller_pn_header)}\s*</th>",
+        )
+        # Raw filter uses Seller as the single meta column header.
+        self.assertEqual(
+            len(re.findall(rf"<th[^>]*>\s*{re.escape(seller_header)}\s*</th>", raw_html)),
+            1,
+        )
+
+        # Products: material type in meta column.
+        organization.ensure_default_product_types()
+        product_pt = next(
+            pt for pt in organization.product_types.all() if pt.has_bom
+        )
+        product_rev = PartRevision.objects.filter(part=parts[2]).order_by("-id").first()
+        product_rev.material = product_pt.code
+        product_rev.save()
+        products = self.client.get(reverse("bom:materials"), {"product": "1"})
+        self.assertEqual(products.status_code, 200)
+        products_html = products.content.decode("utf-8")
+        # {% trans product_type.name %} under active LANGUAGE_CODE.
+        self.assertIn(_(product_pt.name), products_html)
+        self.assertRegex(
+            products_html,
+            rf"<th[^>]*>\s*{re.escape(material_type_header)}\s*</th>",
+        )
+
+        css = open("bom/static/bom/css/style.css").read()
+        self.assertIn(".part-list .part-primary-desc", css)
+        self.assertNotIn(".part-list .part-primary-meta", css)
+
     def test_authenticated_navigation_and_dashboard(self):
         user, organization = create_user_and_organization()
         profile = user.bom_profile(organization=organization)

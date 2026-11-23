@@ -1,0 +1,8 @@
+{# Type-aware meta cell. Expects: part_rev, seller (SellerPart or falsy). #}
+{% if part_rev.is_product %}
+    {% if part_rev.product_type %}{% trans part_rev.product_type.name %}{% elif part_rev.material %}{{ part_rev.material }}{% endif %}
+{% elif seller %}
+    {% with seller_name=seller.seller.name seller_code=seller.seller_part_number %}
+        {% if seller_name %}{{ seller_name }}{% endif %}{% if seller_name and seller_code %} · {% endif %}{% if seller_code %}{{ seller_code }}{% endif %}
+    {% endwith %}
+{% endif %}
