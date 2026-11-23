@@ -471,6 +471,14 @@ class TestCustomerPricing(TransactionTestCase):
         from bom.templatetags.bom_i18n import money_amount
 
         self.assertContains(response, money_amount(row.price))
+        # Copy icon next to customer price (hidden in print).
+        self.assertContains(response, "bom-copy-amount")
+        self.assertContains(response, "content_copy")
+        self.assertContains(response, 'data-copy="%s"' % money_amount(row.price).replace(",", ""))
+        self.assertRegex(
+            response.content.decode(),
+            r'class="bom-copy-amount printer-hide"',
+        )
 
         response = self.client.get(
             reverse(
@@ -490,6 +498,12 @@ class TestCustomerPricing(TransactionTestCase):
         self.assertIn('id="customers-tab"', html)
         self.assertIn('id="customers"', html)
         self.assertContains(response, self.customer.name)
+        self.assertIn("bom-copy-amount", html)
+        self.assertIn("content_copy", html)
+        self.assertIn(
+            'data-copy="%s"' % money_amount(row.price).replace(",", ""),
+            html,
+        )
 
         response = self.client.get(reverse("bom:home"))
         self.assertEqual(response.status_code, 200)
@@ -1627,6 +1641,12 @@ class TestCustomerPricing(TransactionTestCase):
         curr = currency_label(self.organization.currency)
         self.assertIn(money_amount(row.base_cost), peer_table)
         self.assertIn(money_amount(row.price), peer_table)
+        self.assertIn("bom-copy-amount", peer_table)
+        self.assertIn("content_copy", peer_table)
+        self.assertIn(
+            'data-copy="%s"' % money_amount(row.price).replace(",", ""),
+            peer_table,
+        )
         self.assertRegex(
             peer_table,
             rf"(?:BoM Cost|هزینه صورت مواد)<br>\({re.escape(curr)}\)",

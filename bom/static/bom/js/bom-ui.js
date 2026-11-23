@@ -615,6 +615,60 @@
     print: printWithPreparedFonts,
   };
 
+  function flashCopyAmountButton(btn) {
+    var prevTitle = btn.getAttribute("title") || "";
+    var copied = btn.getAttribute("data-copied-label") || "Copied";
+    btn.classList.add("is-copied");
+    btn.setAttribute("title", copied);
+    window.setTimeout(function () {
+      btn.classList.remove("is-copied");
+      btn.setAttribute("title", prevTitle);
+    }, 1200);
+  }
+
+  function copyAmountText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise(function (resolve, reject) {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        if (!document.execCommand("copy")) {
+          reject(new Error("copy failed"));
+          return;
+        }
+        resolve();
+      } catch (err) {
+        reject(err);
+      } finally {
+        document.body.removeChild(ta);
+      }
+    });
+  }
+
+  function bindCopyAmount(root) {
+    $(root).on("click", ".bom-copy-amount", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var btn = this;
+      var text = btn.getAttribute("data-copy") || "";
+      if (!text) {
+        return;
+      }
+      copyAmountText(text).then(function () {
+        flashCopyAmountButton(btn);
+      }).catch(function () {
+        // Silent fail — clipboard may be blocked.
+      });
+    });
+  }
+
   // Keep toggles in sync if the early <head> script already applied a theme.
   syncThemeToggles(readStoredTheme());
   bindThemeToggles(document);
@@ -622,6 +676,7 @@
   $(document).ready(function () {
     bindThemeToggles(document);
     bindPriceInputs(document);
+    bindCopyAmount(document);
     $(".dropdown-trigger").dropdown();
     $(".modal").modal();
     $(".modal-trigger").on("click", function (e) {

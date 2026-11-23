@@ -376,6 +376,35 @@ footer.page-footer>div.container>div.row>div.col>p{
     margin: 11px 0;
 }
 
+.bom-amount-copy {
+    white-space: nowrap;
+}
+
+.bom-copy-amount {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-inline-start: 0.2rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    opacity: 0.45;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+.bom-copy-amount:hover,
+.bom-copy-amount:focus-visible,
+.bom-copy-amount.is-copied {
+    opacity: 1;
+}
+
+.bom-copy-amount .material-icons {
+    font-size: 1rem;
+    line-height: 1;
+}
+
 
 @media print {
     /* Ensure links are black for better readability in print */
