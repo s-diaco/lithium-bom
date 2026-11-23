@@ -5,7 +5,14 @@
       "release-type": "python",
       "changelog-path": "CHANGELOG.md",
       "include-component-in-tag": false,
-      "include-v-in-tag": true
+      "include-v-in-tag": true,
+      "extra-files": [
+        {
+          "type": "toml",
+          "path": "uv.lock",
+          "jsonpath": "$.package[?(@.name == 'lithium-bom' || @.name.value == 'lithium-bom')].version"
+        }
+      ]
     }
   }
 }
