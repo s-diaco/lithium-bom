@@ -376,42 +376,6 @@ footer.page-footer>div.container>div.row>div.col>p{
     margin: 11px 0;
 }
 
-.bom-amount-copy {
-    white-space: nowrap;
-}
-
-.bom-copy-amount {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-inline-start: 0.15rem;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: inherit;
-    opacity: 0.45;
-    cursor: pointer;
-    vertical-align: middle;
-}
-
-.bom-copy-amount:hover,
-.bom-copy-amount:focus-visible {
-    opacity: 1;
-}
-
-.bom-copy-amount.is-copied {
-    opacity: 1;
-    color: #2e7d32;
-}
-
-.bom-copy-amount .material-icons {
-    font-size: 0.75rem;
-    width: 0.75rem;
-    height: 0.75rem;
-    line-height: 1;
-}
-
-
 @media print {
     /* Ensure links are black for better readability in print */
     a {
