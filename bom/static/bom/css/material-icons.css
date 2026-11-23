@@ -25,6 +25,12 @@
   -webkit-font-smoothing: antialiased;
   /* Hide ligature names until the icon face is actually ready (not just past block). */
   visibility: hidden;
+  /* Reserve final glyph box while hidden — fallback ligature metrics must not reflow the navbar. */
+  width: 1em;
+  height: 1em;
+  overflow: hidden;
+  flex-shrink: 0;
+  vertical-align: middle;
 }
 
 html.material-icons-ready .material-icons {
