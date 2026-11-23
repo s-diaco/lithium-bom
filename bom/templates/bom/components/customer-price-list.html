@@ -1,5 +1,6 @@
 {% load djmoney %}
 {% load bom_dates %}
+{% load bom_i18n %}
 
 {% with list_from=list_from|default:"customer" %}
 <div class="bom-table-wrap bom-table-wrap--fit responsive-table-wrapper mb-4">
@@ -34,7 +35,7 @@
                 <td class="text-normal td-med">{{ row.profit_percent }}</td>
                 <td class="text-normal td-med">{{ row.current_profit_percent|default:"-" }}</td>
                 <td class="text-normal td-med">{{ row.price|default:"-" }}</td>
-                <td class="text-normal td-med">{{ row.quantity }}</td>
+                <td class="text-normal td-med">{{ row.quantity|grouped_number }}</td>
                 {% if show_history %}
                     <td class="text-normal td-med">{% user_datetime row.created_at %}</td>
                     <td class="text-normal td-med">{% if row.created_by %}{{ row.created_by.username }}{% else %}-{% endif %}</td>

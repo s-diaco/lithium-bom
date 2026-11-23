@@ -57,6 +57,16 @@ def format_money_amount(value, currency=None):
     return formatted
 
 
+def format_grouped_integer(value):
+    """Format a whole number with thousands separators (same grouping as money)."""
+    if value is None or value == "":
+        return ""
+    try:
+        return f"{int(Decimal(value)):,}"
+    except Exception:
+        return value
+
+
 def normalize_grouped_number(value):
     """Strip thousands separators / localized digits from a typed amount string."""
     if value is None or isinstance(value, (int, float, Decimal)):

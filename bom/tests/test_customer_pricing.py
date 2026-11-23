@@ -1294,6 +1294,51 @@ class TestCustomerPricing(TransactionTestCase):
         self.assertContains(part_info, "مقدار سفارش (کیلوگرم)")
         self.assertContains(part_info, "250")
 
+    def test_order_quantity_displays_thousands_separator(self):
+        from bom.templatetags.bom_i18n import grouped_number
+
+        part_revision = self.part.latest()
+        base_cost = part_revision.bom_unit_cost_at_quantity(1)
+        tier_price = self._tier_price(base_cost, Decimal("20"))
+
+        response = self.client.post(
+            reverse(
+                "bom:customer-price-create", kwargs={"customer_id": self.customer.id}
+            ),
+            self._confirm_payload(
+                Decimal("20"),
+                tier_price.amount,
+                note="big qty",
+                quantity="10,000",
+            ),
+        )
+        self.assertEqual(response.status_code, 302)
+        row = CustomerPrice.objects.get(customer=self.customer, part=self.part)
+        self.assertEqual(row.quantity, 10000)
+
+        formatted = grouped_number(row.quantity)
+        self.assertEqual(formatted, "10,000")
+
+        customer_info = self.client.get(
+            reverse("bom:customer-info", kwargs={"customer_id": self.customer.id})
+        )
+        self.assertContains(customer_info, formatted)
+
+        part_info = self.client.get(
+            reverse("bom:part-info", kwargs={"part_id": self.part.id})
+        )
+        self.assertContains(part_info, formatted)
+
+        edit_url = reverse(
+            "bom:customer-price-edit", kwargs={"customer_price_id": row.id}
+        )
+        edit_get = self.client.get(edit_url)
+        self.assertEqual(edit_get.status_code, 200)
+        self.assertRegex(
+            edit_get.content.decode(),
+            r'name="quantity"[^>]*class="[^"]*bom-price-input',
+        )
+
     def test_preview_shows_bom_overview(self):
         part_revision = self.part.latest()
         part_revision.material = "with_loi"

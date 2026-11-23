@@ -9,6 +9,7 @@ from django.utils.translation import gettext
 from bom.forms import (
     AddSubpartForm,
     GroupedDecimalField,
+    GroupedIntegerField,
     HomeJumpForm,
     OrganizationExchangeRatesForm,
     PartFormSemiIntelligent,
@@ -271,6 +272,18 @@ class TestForms(TestCase):
         # Plain Decimal needs an explicit currency to treat as IRR.
         self.assertEqual(format_money_amount(Decimal("112.50"), currency="IRR"), "113")
         self.assertEqual(format_money_amount(Decimal("112.50")), "112.5")
+
+    def test_grouped_number_filter_and_integer_field(self):
+        from bom.templatetags.bom_i18n import grouped_number
+        from bom.utils import format_grouped_integer
+
+        self.assertEqual(format_grouped_integer(10000), "10,000")
+        self.assertEqual(grouped_number(2500), "2,500")
+        self.assertEqual(grouped_number(None), "")
+        field = GroupedIntegerField(min_value=1)
+        self.assertEqual(field.clean("10,000"), 10000)
+        self.assertEqual(field.clean("9٬876"), 9876)
+        self.assertIn("bom-price-input", field.widget.attrs.get("class", ""))
 
     def test_product_type_labels_translated(self):
         translation.activate("en-US")
@@ -573,6 +586,11 @@ class TestForms(TestCase):
         self.assertEqual(field.clean("9٬876"), Decimal("9876"))
         self.assertEqual(field.clean("1,234.56"), Decimal("1234.56"))
         self.assertEqual(field.clean("12.5"), Decimal("12.5"))
+
+    def test_grouped_integer_field_to_python(self):
+        field = GroupedIntegerField(min_value=1)
+        self.assertEqual(field.clean("1,234,567"), 1234567)
+        self.assertEqual(field.prepare_value(10000), "10000")
 
     def test_exchange_rate_forms_accept_grouped_rates(self):
         self.organization.currency = "IRR"
