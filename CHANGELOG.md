@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.1](https://github.com/s-diaco/lithium-bom/compare/v3.3.0...v3.3.1) (2026-11-23)
+
+
+### Performance Improvements
+
+* share bounded server-side part autocomplete ([#232](https://github.com/s-diaco/lithium-bom/issues/232)) ([a044056](https://github.com/s-diaco/lithium-bom/commit/a044056c8e5fb4d264f199e74e78d46e5dbe3d38))
+
 ## [3.3.0](https://github.com/s-diaco/lithium-bom/compare/v3.2.0...v3.3.0) (2026-11-23)
 
 
