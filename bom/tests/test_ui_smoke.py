@@ -309,6 +309,29 @@ class TestUiSmoke(TransactionTestCase):
         self.assertIn("bom-action-bar", materials_html)
         self.assertIn('action="/materials/"', materials_html)
 
+    def test_materials_list_description_under_part_number(self):
+        """Part number cell stacks description on a second line; no Material column."""
+        user, organization = create_user_and_organization()
+        profile = user.bom_profile(organization=organization)
+        profile.role = "A"
+        profile.save()
+        self.client.login(username="kasper", password="ghostpassword")
+        create_some_fake_parts(organization=organization)
+
+        materials = self.client.get(reverse("bom:materials"))
+        self.assertEqual(materials.status_code, 200)
+        html = materials.content.decode("utf-8")
+        self.assertIn("part-primary-desc", html)
+        self.assertIn("Brown dog", html)
+        # Description lives under the code, not a separate Material header column.
+        self.assertNotRegex(
+            html,
+            r"<th[^>]*>\s*(Material|متریال)\s*</th>",
+            "Material column header should be removed from materials list",
+        )
+        css = open("bom/static/bom/css/style.css").read()
+        self.assertIn(".part-list .part-primary-desc", css)
+
     def test_authenticated_navigation_and_dashboard(self):
         user, organization = create_user_and_organization()
         profile = user.bom_profile(organization=organization)

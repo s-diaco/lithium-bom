@@ -77,6 +77,11 @@ td, tr {
     white-space: nowrap;
 }
 
+/* Second line under part/material code in list tables (overrides .single-line). */
+.part-list .part-primary-desc {
+    white-space: normal;
+}
+
 .responsive-table-wrapper {
     overflow-x: auto;
     padding-bottom: 16px;

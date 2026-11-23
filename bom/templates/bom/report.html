@@ -89,8 +89,6 @@
                                 <th class="text-normal td-small">{% trans "Category" %}</th>
                             {% endif %}
 
-                            <th class="text-normal td-large">{% trans "Material" %}</th>
-
                             <th class="text-normal td-small">{% trans "Revision" %}</th>
 
                             <th class="text-normal td-small">{% trans "Seller Part Number" %}</th>
@@ -111,13 +109,16 @@
                                         <input type="checkbox" class="checkbox-array" name="actions" value="{{ part.id }}">{% endif %}</label></td>
                                 {% endif %}
 
-                                <td class="text-normal td-med"><a href="{% url 'bom:part-info-history' part_id=part.id part_revision_id=part_rev.id %}">{{ part.full_part_number }}</a></td>
+                                <td class="text-normal td-med">
+                                    <a href="{% url 'bom:part-info-history' part_id=part.id part_revision_id=part_rev.id %}">{{ part.full_part_number }}</a>
+                                    {% if part_rev.description %}
+                                        <div class="text-sm opacity-70 part-primary-desc">{{ part_rev.description }}</div>
+                                    {% endif %}
+                                </td>
 
                                 {% if organization.number_scheme == 'S' %}
                                     <td class="text-normal td-small">{{ part.number_class.name }}</td>
                                 {% endif %}
-
-                                <td class="text-normal td-large">{{ part_rev.description }}</td>
 
                                 <td class="text-normal td-small">{{ part_rev.revision }}</td>
 
