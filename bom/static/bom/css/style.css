@@ -384,7 +384,7 @@ footer.page-footer>div.container>div.row>div.col>p{
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-inline-start: 0.2rem;
+    margin-inline-start: 0.15rem;
     padding: 0;
     border: 0;
     background: transparent;
@@ -405,7 +405,9 @@ footer.page-footer>div.container>div.row>div.col>p{
 }
 
 .bom-copy-amount .material-icons {
-    font-size: 1rem;
+    font-size: 0.75rem;
+    width: 0.75rem;
+    height: 0.75rem;
     line-height: 1;
 }
 
