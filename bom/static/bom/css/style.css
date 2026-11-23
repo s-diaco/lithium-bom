@@ -77,8 +77,9 @@ td, tr {
     white-space: nowrap;
 }
 
-/* Second line under part/material code in list tables (overrides .single-line). */
-.part-list .part-primary-desc {
+/* Desc + type-aware meta under part/material code (overrides .single-line). */
+.part-list .part-primary-desc,
+.part-list .part-primary-meta {
     white-space: normal;
 }
 

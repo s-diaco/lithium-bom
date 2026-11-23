@@ -310,27 +310,50 @@ class TestUiSmoke(TransactionTestCase):
         self.assertIn('action="/materials/"', materials_html)
 
     def test_materials_list_description_under_part_number(self):
-        """Part number cell stacks description on a second line; no Material column."""
+        """Part number cell stacks description + type-aware meta; no Material column."""
+        from bom.models import PartRevision, SellerPart
+
         user, organization = create_user_and_organization()
         profile = user.bom_profile(organization=organization)
         profile.role = "A"
         profile.save()
         self.client.login(username="kasper", password="ghostpassword")
-        create_some_fake_parts(organization=organization)
+        parts = create_some_fake_parts(organization=organization)
 
-        materials = self.client.get(reverse("bom:materials"))
-        self.assertEqual(materials.status_code, 200)
-        html = materials.content.decode("utf-8")
-        self.assertIn("part-primary-desc", html)
-        self.assertIn("Brown dog", html)
-        # Description lives under the code, not a separate Material header column.
+        # Raw list (empty Material Type): seller name · seller code under description.
+        SellerPart.objects.filter(manufacturer_part__part=parts[0]).update(
+            seller_part_number="SPN-RAW-1"
+        )
+        raw = self.client.get(reverse("bom:materials"), {"product": "0"})
+        self.assertEqual(raw.status_code, 200)
+        raw_html = raw.content.decode("utf-8")
+        self.assertIn("part-primary-desc", raw_html)
+        self.assertIn("Brown dog", raw_html)
+        self.assertIn("part-primary-meta", raw_html)
+        self.assertRegex(raw_html, r"Mouser\s*·\s*SPN-RAW-1|Digi-Key\s*·\s*SPN-RAW-1")
         self.assertNotRegex(
-            html,
+            raw_html,
             r"<th[^>]*>\s*(Material|متریال)\s*</th>",
             "Material column header should be removed from materials list",
         )
+
+        # Products: material type name under description.
+        organization.ensure_default_product_types()
+        product_pt = next(
+            pt for pt in organization.product_types.all() if pt.has_bom
+        )
+        product_rev = PartRevision.objects.filter(part=parts[2]).order_by("-id").first()
+        product_rev.material = product_pt.code
+        product_rev.save()
+        products = self.client.get(reverse("bom:materials"), {"product": "1"})
+        self.assertEqual(products.status_code, 200)
+        products_html = products.content.decode("utf-8")
+        self.assertIn("part-primary-meta", products_html)
+        self.assertIn(product_pt.name, products_html)
+
         css = open("bom/static/bom/css/style.css").read()
         self.assertIn(".part-list .part-primary-desc", css)
+        self.assertIn(".part-list .part-primary-meta", css)
 
     def test_authenticated_navigation_and_dashboard(self):
         user, organization = create_user_and_organization()

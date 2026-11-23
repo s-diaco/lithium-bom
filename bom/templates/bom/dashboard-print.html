@@ -25,6 +25,7 @@
                         {% if part_rev.description %}
                             <div class="text-sm opacity-70 part-primary-desc">{{ part_rev.description }}</div>
                         {% endif %}
+                        {% include "bom/components/part-list-primary-meta.html" with part_rev=part_rev seller=seller %}
                     </td>
                     {% if organization.number_scheme == 'S' %}
                         <td>{{ part.number_class.name }}</td>

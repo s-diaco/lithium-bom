@@ -1,0 +1,14 @@
+{# Type-aware meta under description. Expects: part_rev, seller (SellerPart or falsy). #}
+{% if part_rev.is_product %}
+    {% if part_rev.product_type %}
+        <div class="text-sm opacity-70 part-primary-meta">{% trans part_rev.product_type.name %}</div>
+    {% elif part_rev.material %}
+        <div class="text-sm opacity-70 part-primary-meta">{{ part_rev.material }}</div>
+    {% endif %}
+{% elif seller %}
+    {% with seller_name=seller.seller.name seller_code=seller.seller_part_number %}
+        {% if seller_name or seller_code %}
+            <div class="text-sm opacity-70 part-primary-meta">{% if seller_name %}{{ seller_name }}{% endif %}{% if seller_name and seller_code %} · {% endif %}{% if seller_code %}{{ seller_code }}{% endif %}</div>
+        {% endif %}
+    {% endwith %}
+{% endif %}
