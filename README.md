@@ -295,6 +295,20 @@ To set this up you just need to add your API key to local_settings.py as shown i
 
 To update rates, migrate and run `python manage.py update_rates`. Some day we will need to add a (celerybeat?) task to update rates on a schedule. Explained more [here](https://github.com/django-money/django-money#working-with-exchange-rates).
 
+## Contributing
+
+Use [Conventional Commits](https://www.conventionalcommits.org/) on PR titles (squash merges use the title as the release commit):
+
+| Prefix | Semver bump |
+| --- | --- |
+| `fix:` | patch |
+| `feat:` | minor |
+| `BREAKING CHANGE` / `feat!:` / `fix!:` | major |
+
+`chore:`, `docs:`, and similar types are folded into the next release changelog; they do not open a release by themselves. Prefer `fix:` when a maintenance change should cut a patch.
+
+Releases are handled by [release-please](https://github.com/googleapis/release-please): merges to `main` open or update a release PR that bumps `pyproject.toml`, updates `CHANGELOG.md`, and (when that PR is merged) creates the GitHub release/tag (`vX.Y.Z`). Do not bump the version inside feature PRs.
+
 ## Installation Pitfalls
 
 ### Windows
