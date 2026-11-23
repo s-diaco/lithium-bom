@@ -168,191 +168,183 @@ html.dark .bom-brand-mark {
   filter: invert(1);
 }
 
-/* Birthday surprise: soft pink / rose shell (noticeable; no emoji / no purple). */
-body.is-birthday {
-  --color-canvas: #f8eef2;
-  --color-border: #e0c4ce;
-  --color-accent: #c45d7a;
-  /* Soft blush wash so the day reads differently from the normal cool canvas. */
-  background-image: linear-gradient(
-    180deg,
-    #fce4ec 0%,
-    var(--color-canvas) 12rem,
-    var(--color-canvas) 100%
-  );
-  /* Spark accents: rose / blush pink (not beige, not purple). */
-  --bom-birthday-spark-a: #e08aa8;
-  --bom-birthday-spark-b: #d46b88;
-  --bom-birthday-spark-c: #f2c4d4;
-}
-
-body.is-birthday .bom-navbar {
-  border-bottom-color: #d07090;
-  /* Solid rose underline only — no animated sweep. Avoid inset box-shadow (smoke forbids). */
-  background-color: color-mix(in srgb, #fce4ec 70%, transparent);
-}
-
-/* Pink tint only for the charcoal Lithium PNG; birthday SVG is already rose. */
-body.is-birthday .bom-brand-mark:not(.bom-brand-mark-birthday) {
-  filter: sepia(0.25) saturate(1.35) hue-rotate(-40deg);
-}
-
-body.is-birthday .bom-brand-mark-birthday,
-html.dark body.is-birthday .bom-brand-mark-birthday,
-html.dark .bom-brand-mark-birthday {
-  filter: none;
-}
-
-/* Motion 1: twinkling rose glints (not falling snow / not confetti). */
-body.is-birthday::before,
-body.is-birthday::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 5;
-  pointer-events: none;
-}
-
-/* Soft cross / streak glints that flash in place — no vertical drift. */
-body.is-birthday::before {
-  background:
-    radial-gradient(ellipse 14px 3px at 12% 14%, var(--bom-birthday-spark-a), transparent),
-    radial-gradient(ellipse 3px 14px at 12% 14%, var(--bom-birthday-spark-a), transparent),
-    radial-gradient(ellipse 12px 3px at 38% 10%, var(--bom-birthday-spark-c), transparent),
-    radial-gradient(ellipse 3px 12px at 38% 10%, var(--bom-birthday-spark-c), transparent),
-    radial-gradient(ellipse 14px 3px at 64% 16%, var(--bom-birthday-spark-b), transparent),
-    radial-gradient(ellipse 3px 14px at 64% 16%, var(--bom-birthday-spark-b), transparent),
-    radial-gradient(ellipse 12px 3px at 88% 12%, var(--bom-birthday-spark-a), transparent),
-    radial-gradient(ellipse 3px 12px at 88% 12%, var(--bom-birthday-spark-a), transparent),
-    radial-gradient(ellipse 10px 3px at 22% 28%, var(--bom-birthday-spark-b), transparent),
-    radial-gradient(ellipse 3px 10px at 22% 28%, var(--bom-birthday-spark-b), transparent),
-    radial-gradient(ellipse 10px 3px at 76% 26%, var(--bom-birthday-spark-c), transparent),
-    radial-gradient(ellipse 3px 10px at 76% 26%, var(--bom-birthday-spark-c), transparent);
-  opacity: 0.9;
-  animation: bom-birthday-sparks-twinkle 2s ease-in-out infinite;
-}
-
-/* Second layer phase-offset so something is always flashing. */
-body.is-birthday::after {
-  background:
-    radial-gradient(ellipse 11px 3px at 28% 20%, var(--bom-birthday-spark-c), transparent),
-    radial-gradient(ellipse 3px 11px at 28% 20%, var(--bom-birthday-spark-c), transparent),
-    radial-gradient(ellipse 13px 3px at 52% 8%, var(--bom-birthday-spark-a), transparent),
-    radial-gradient(ellipse 3px 13px at 52% 8%, var(--bom-birthday-spark-a), transparent),
-    radial-gradient(ellipse 11px 3px at 80% 22%, var(--bom-birthday-spark-b), transparent),
-    radial-gradient(ellipse 3px 11px at 80% 22%, var(--bom-birthday-spark-b), transparent),
-    radial-gradient(ellipse 9px 3px at 46% 30%, var(--bom-birthday-spark-b), transparent),
-    radial-gradient(ellipse 3px 9px at 46% 30%, var(--bom-birthday-spark-b), transparent);
-  opacity: 0.75;
-  animation: bom-birthday-sparks-twinkle-alt 2.6s ease-in-out infinite;
-}
-
-/* Motion 2: clear brand-mark pulse in the navbar (noticeable within ~1s). */
-body.is-birthday .bom-navbar .bom-brand-mark {
-  transform-origin: center;
-  animation: bom-birthday-mark-pulse 1.8s ease-in-out infinite;
-}
-
-html.dark body.is-birthday {
-  --color-canvas: #1a1216;
-  --color-border: #5a3a45;
-  --color-accent: #e8a0b5;
-  --bom-birthday-spark-a: #e8a0b5;
-  --bom-birthday-spark-b: #d48098;
-  --bom-birthday-spark-c: #c07088;
-  background-image: linear-gradient(
-    180deg,
-    #2a1820 0%,
-    var(--color-canvas) 12rem,
-    var(--color-canvas) 100%
-  );
-}
-
-html.dark body.is-birthday .bom-navbar {
-  background-color: color-mix(in srgb, #2a1820 70%, transparent);
-  border-bottom-color: #e08aa8;
-}
-
-html.dark body.is-birthday .bom-brand-mark:not(.bom-brand-mark-birthday) {
-  filter: invert(1) sepia(0.25) saturate(1.2) hue-rotate(-35deg);
-}
-
-html.dark body.is-birthday::before {
-  opacity: 0.75;
-}
-
-html.dark body.is-birthday::after {
-  opacity: 0.6;
-}
-
-@keyframes bom-birthday-sparks-twinkle {
-  0%,
-  100% {
-    opacity: 0.25;
-    filter: brightness(0.9);
+/* Birthday surprise: screen-only so print keeps normal tokens/colors. */
+@media screen {
+  /* Soft pink / rose shell (noticeable; no emoji / no purple). */
+  body.is-birthday {
+    --color-canvas: #f8eef2;
+    --color-border: #e0c4ce;
+    --color-accent: #c45d7a;
+    /* Soft blush wash so the day reads differently from the normal cool canvas. */
+    background-image: linear-gradient(
+      180deg,
+      #fce4ec 0%,
+      var(--color-canvas) 12rem,
+      var(--color-canvas) 100%
+    );
+    /* Spark accents: warm yellow / gold glints (lit, not pink). */
+    --bom-birthday-spark-a: #f0d060;
+    --bom-birthday-spark-b: #e8b83a;
+    --bom-birthday-spark-c: #fff0a8;
   }
-  40% {
-    opacity: 1;
-    filter: brightness(1.25);
-  }
-  70% {
-    opacity: 0.45;
-    filter: brightness(1);
-  }
-}
 
-@keyframes bom-birthday-sparks-twinkle-alt {
-  0%,
-  100% {
-    opacity: 0.2;
-    filter: brightness(0.95);
+  body.is-birthday .bom-navbar {
+    border-bottom-color: #d07090;
+    /* Solid rose underline only — no animated sweep. Avoid inset box-shadow (smoke forbids). */
+    background-color: color-mix(in srgb, #fce4ec 70%, transparent);
   }
-  35% {
-    opacity: 0.4;
-  }
-  55% {
-    opacity: 0.95;
-    filter: brightness(1.3);
-  }
-}
 
-@keyframes bom-birthday-mark-pulse {
-  0%,
-  100% {
-    transform: scale(1) rotate(0deg);
+  /* Pink tint only for the charcoal Lithium PNG; birthday SVG is already rose. */
+  body.is-birthday .bom-brand-mark:not(.bom-brand-mark-birthday) {
+    filter: sepia(0.25) saturate(1.35) hue-rotate(-40deg);
   }
-  40% {
-    transform: scale(1.16) rotate(-3deg);
-  }
-  60% {
-    transform: scale(1.12) rotate(3deg);
-  }
-}
 
-@media (prefers-reduced-motion: reduce) {
+  body.is-birthday .bom-brand-mark-birthday,
+  html.dark body.is-birthday .bom-brand-mark-birthday,
+  html.dark .bom-brand-mark-birthday {
+    filter: none;
+  }
+
+  /* Motion 1: twinkling yellow glints (not falling snow / not confetti). */
   body.is-birthday::before,
-  body.is-birthday::after,
-  body.is-birthday .bom-navbar .bom-brand-mark {
-    animation: none;
+  body.is-birthday::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 5;
+    pointer-events: none;
   }
 
+  /* Soft cross / streak glints that flash in place — no vertical drift. */
   body.is-birthday::before {
-    opacity: 0.5;
+    background:
+      radial-gradient(ellipse 14px 3px at 12% 14%, var(--bom-birthday-spark-a), transparent),
+      radial-gradient(ellipse 3px 14px at 12% 14%, var(--bom-birthday-spark-a), transparent),
+      radial-gradient(ellipse 12px 3px at 38% 10%, var(--bom-birthday-spark-c), transparent),
+      radial-gradient(ellipse 3px 12px at 38% 10%, var(--bom-birthday-spark-c), transparent),
+      radial-gradient(ellipse 14px 3px at 64% 16%, var(--bom-birthday-spark-b), transparent),
+      radial-gradient(ellipse 3px 14px at 64% 16%, var(--bom-birthday-spark-b), transparent),
+      radial-gradient(ellipse 12px 3px at 88% 12%, var(--bom-birthday-spark-a), transparent),
+      radial-gradient(ellipse 3px 12px at 88% 12%, var(--bom-birthday-spark-a), transparent),
+      radial-gradient(ellipse 10px 3px at 22% 28%, var(--bom-birthday-spark-b), transparent),
+      radial-gradient(ellipse 3px 10px at 22% 28%, var(--bom-birthday-spark-b), transparent),
+      radial-gradient(ellipse 10px 3px at 76% 26%, var(--bom-birthday-spark-c), transparent),
+      radial-gradient(ellipse 3px 10px at 76% 26%, var(--bom-birthday-spark-c), transparent);
+    opacity: 0.9;
+    animation: bom-birthday-sparks-twinkle 2s ease-in-out infinite;
   }
 
+  /* Second layer phase-offset so something is always flashing. */
   body.is-birthday::after {
-    opacity: 0.35;
+    background:
+      radial-gradient(ellipse 11px 3px at 28% 20%, var(--bom-birthday-spark-c), transparent),
+      radial-gradient(ellipse 3px 11px at 28% 20%, var(--bom-birthday-spark-c), transparent),
+      radial-gradient(ellipse 13px 3px at 52% 8%, var(--bom-birthday-spark-a), transparent),
+      radial-gradient(ellipse 3px 13px at 52% 8%, var(--bom-birthday-spark-a), transparent),
+      radial-gradient(ellipse 11px 3px at 80% 22%, var(--bom-birthday-spark-b), transparent),
+      radial-gradient(ellipse 3px 11px at 80% 22%, var(--bom-birthday-spark-b), transparent),
+      radial-gradient(ellipse 9px 3px at 46% 30%, var(--bom-birthday-spark-b), transparent),
+      radial-gradient(ellipse 3px 9px at 46% 30%, var(--bom-birthday-spark-b), transparent);
+    opacity: 0.75;
+    animation: bom-birthday-sparks-twinkle-alt 2.6s ease-in-out infinite;
   }
-}
 
-@media print {
-  body.is-birthday::before,
-  body.is-birthday::after {
-    display: none;
-  }
-
+  /* Motion 2: clear brand-mark pulse in the navbar (noticeable within ~1s). */
   body.is-birthday .bom-navbar .bom-brand-mark {
-    animation: none;
+    transform-origin: center;
+    animation: bom-birthday-mark-pulse 1.8s ease-in-out infinite;
+  }
+
+  html.dark body.is-birthday {
+    --color-canvas: #1a1216;
+    --color-border: #5a3a45;
+    --color-accent: #e8a0b5;
+    --bom-birthday-spark-a: #f5d86a;
+    --bom-birthday-spark-b: #e8c040;
+    --bom-birthday-spark-c: #ffe9a0;
+    background-image: linear-gradient(
+      180deg,
+      #2a1820 0%,
+      var(--color-canvas) 12rem,
+      var(--color-canvas) 100%
+    );
+  }
+
+  html.dark body.is-birthday .bom-navbar {
+    background-color: color-mix(in srgb, #2a1820 70%, transparent);
+    border-bottom-color: #e08aa8;
+  }
+
+  html.dark body.is-birthday .bom-brand-mark:not(.bom-brand-mark-birthday) {
+    filter: invert(1) sepia(0.25) saturate(1.2) hue-rotate(-35deg);
+  }
+
+  html.dark body.is-birthday::before {
+    opacity: 0.75;
+  }
+
+  html.dark body.is-birthday::after {
+    opacity: 0.6;
+  }
+
+  @keyframes bom-birthday-sparks-twinkle {
+    0%,
+    100% {
+      opacity: 0.25;
+      filter: brightness(0.9);
+    }
+    40% {
+      opacity: 1;
+      filter: brightness(1.25);
+    }
+    70% {
+      opacity: 0.45;
+      filter: brightness(1);
+    }
+  }
+
+  @keyframes bom-birthday-sparks-twinkle-alt {
+    0%,
+    100% {
+      opacity: 0.2;
+      filter: brightness(0.95);
+    }
+    35% {
+      opacity: 0.4;
+    }
+    55% {
+      opacity: 0.95;
+      filter: brightness(1.3);
+    }
+  }
+
+  @keyframes bom-birthday-mark-pulse {
+    0%,
+    100% {
+      transform: scale(1) rotate(0deg);
+    }
+    40% {
+      transform: scale(1.16) rotate(-3deg);
+    }
+    60% {
+      transform: scale(1.12) rotate(3deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    body.is-birthday::before,
+    body.is-birthday::after,
+    body.is-birthday .bom-navbar .bom-brand-mark {
+      animation: none;
+    }
+
+    body.is-birthday::before {
+      opacity: 0.5;
+    }
+
+    body.is-birthday::after {
+      opacity: 0.35;
+    }
   }
 }
 
