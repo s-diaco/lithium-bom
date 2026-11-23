@@ -263,7 +263,7 @@ requires-dist = [
     { name = "django-money", specifier = ">=3.6.1" },
     { name = "gunicorn", specifier = ">=21.2.0" },
     { name = "jdatetime", specifier = ">=5.2.0" },
-    { name = "lithium-systemgroup", git = "https://github.com/s-diaco/lithium-systemgroup.git?rev=d4c690c136702cf0451a9183f590101324861f4f" },
+    { name = "lithium-systemgroup", git = "https://github.com/s-diaco/lithium-systemgroup.git?rev=1eee746f90070193fd530e6e54cb5bc69821c425" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "pandas", specifier = ">=2.3.2" },
     { name = "psycopg2-binary", specifier = ">=2.9.9" },
@@ -281,8 +281,8 @@ dev = [
 
 [[package]]
 name = "lithium-systemgroup"
-version = "0.2.8"
-source = { git = "https://github.com/s-diaco/lithium-systemgroup.git?rev=d4c690c136702cf0451a9183f590101324861f4f#d4c690c136702cf0451a9183f590101324861f4f" }
+version = "0.2.11"
+source = { git = "https://github.com/s-diaco/lithium-systemgroup.git?rev=1eee746f90070193fd530e6e54cb5bc69821c425#1eee746f90070193fd530e6e54cb5bc69821c425" }
 dependencies = [
     { name = "requests" },
 ]
