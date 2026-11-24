@@ -10,6 +10,8 @@ Two backends share that shape:
 - ``manual_customs`` — customs/official rate; Customs Duty only
 """
 
+from contextlib import contextmanager
+from contextvars import ContextVar
 from decimal import Decimal
 
 from django.utils import timezone
@@ -27,6 +29,28 @@ _BACKEND_BY_KIND = {
     RATE_KIND_MARKET: MANUAL_BACKEND_NAME,
     RATE_KIND_CUSTOMS: CUSTOMS_BACKEND_NAME,
 }
+
+
+# Values live only inside an explicit calculation scope, never across requests.
+_calculation_rates = ContextVar("calculation_exchange_rates", default=None)
+
+
+@contextmanager
+def exchange_rate_scope():
+    """Share lazy bulk rate reads across a calculation and its nested calls.
+
+    Context-local state isolates concurrent requests; the outermost scope resets
+    it even on exceptions. Cache missing rates too, but never seller decisions
+    (which depend on quantity) or model-instance prices.
+    """
+    if _calculation_rates.get() is not None:
+        yield
+        return
+    token = _calculation_rates.set({})
+    try:
+        yield
+    finally:
+        _calculation_rates.reset(token)
 
 
 class ManualExchangeBackend:
@@ -47,7 +71,7 @@ def _backend_name(kind=RATE_KIND_MARKET):
 
 
 def get_manual_backend(base_currency, kind=RATE_KIND_MARKET):
-    backend, _ = ExchangeBackend.objects.update_or_create(
+    backend, _ = ExchangeBackend.objects.get_or_create(
         name=_backend_name(kind),
         defaults={
             "base_currency": str(base_currency),
@@ -67,6 +91,15 @@ def get_org_per_unit_rate(foreign_currency, org_currency, kind=RATE_KIND_MARKET)
     org_currency = str(org_currency)
     if foreign_currency == org_currency:
         return Decimal("1")
+    cache = _calculation_rates.get()
+    if cache is not None:
+        key = (org_currency, kind)
+        if key not in cache:
+            backend = get_manual_backend(org_currency, kind=kind)
+            cache[key] = dict(
+                Rate.objects.filter(backend=backend).values_list("currency", "value")
+            )
+        return cache[key].get(foreign_currency)
     backend = get_manual_backend(org_currency, kind=kind)
     rate = Rate.objects.filter(backend=backend, currency=foreign_currency).first()
     return rate.value if rate is not None else None
@@ -117,6 +150,9 @@ def set_org_per_unit_rate(foreign_currency, org_currency, value, kind=RATE_KIND_
     foreign_currency = str(foreign_currency)
     org_currency = str(org_currency)
     backend = get_manual_backend(org_currency, kind=kind)
+    cache = _calculation_rates.get()
+    if cache is not None:
+        cache.clear()
     if value is None or value == "":
         Rate.objects.filter(backend=backend, currency=foreign_currency).delete()
         return None
