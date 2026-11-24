@@ -6,6 +6,7 @@ from django.db.models import Max, Prefetch, Q, Subquery, prefetch_related_object
 from django.db.models.functions import Coalesce
 
 from bom.constants import CONFIGURATION_TYPE_WORKING
+from bom.exchange import exchange_rate_scope
 from bom.models import ManufacturerPart, PartRevision, SellerPart, Subpart
 
 
@@ -158,6 +159,7 @@ def prefetch_bom_graphs(part_revisions):
         frontier = next_frontier
 
 
+@exchange_rate_scope()
 def prepare_part_revs_for_list_page(
     part_revs_page,
     quantity=LIST_PAGE_SELLER_QUANTITY,
@@ -238,6 +240,7 @@ def list_unit_cost(part_rev, *, rollup_bom=True):
     return seller.unit_cost if seller else None
 
 
+@exchange_rate_scope()
 def attach_list_unit_costs(part_revs_page):
     """Prefetch page BoM graphs and attach ``list_unit_cost`` per row.
 
@@ -274,6 +277,7 @@ def attach_list_unit_costs(part_revs_page):
     return part_revs_page
 
 
+@exchange_rate_scope()
 def prepare_all_part_revs_for_list_page(
     part_revs, quantity=LIST_PAGE_SELLER_QUANTITY
 ):
@@ -307,8 +311,12 @@ def prepare_part_revs_for_export(part_revs, quantity=LIST_PAGE_SELLER_QUANTITY):
     return page
 
 
+@exchange_rate_scope()
 def attach_print_unit_costs(part_revs_page):
-    """Set print_unit_cost without walking BOM trees for raw materials."""
+    """Reuse prepared product rollups; raw print prices remain seller quotes."""
     for part_rev in part_revs_page:
-        part_rev.print_unit_cost = list_unit_cost(part_rev)
+        if part_rev.is_product and hasattr(part_rev, "list_unit_cost"):
+            part_rev.print_unit_cost = part_rev.list_unit_cost
+        else:
+            part_rev.print_unit_cost = list_unit_cost(part_rev)
     return part_revs_page

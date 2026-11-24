@@ -15,6 +15,7 @@ from django.utils.functional import cached_property
 from djmoney.models.fields import CURRENCY_CHOICES, CurrencyField, MoneyField
 from djmoney.money import Money
 
+from bom.exchange import exchange_rate_scope
 from bom.part_bom_weighted import PartBomWeighted, PartBomWeightedItem
 
 from .base_classes import AsDictModel
@@ -1314,6 +1315,7 @@ class PartRevision(models.Model):
             )
         )
 
+    @exchange_rate_scope()
     def indented(self, top_level_quantity=100, is_weighted_bom=True):
         type_map = self.part.organization.product_types_by_code()
 

@@ -1,15 +1,17 @@
 """Products list: prefetched BoM costs match bom_unit_cost with fewer queries."""
 
 from decimal import Decimal
+from time import perf_counter
 from unittest.mock import patch
 
 from django.db import connection
 from django.test import TestCase
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
+from django.utils.html import escape
 from djmoney.money import Money
 
-from bom.exchange import RATE_KIND_MARKET, set_org_per_unit_rate
+from bom.exchange import RATE_KIND_CUSTOMS, RATE_KIND_MARKET, set_org_per_unit_rate
 from bom.helpers import (
     create_a_fake_seller_part,
     create_some_fake_manufacturers,
@@ -21,7 +23,9 @@ from bom.list_queries import (
     LIST_PAGE_SELECT_RELATED,
     UnpaginatedPartRevList,
     attach_list_unit_costs,
+    attach_print_unit_costs,
     prefetch_bom_graphs,
+    prepare_all_part_revs_for_list_page,
     prepare_part_revs_for_list_page,
 )
 from bom.models import ManufacturerPart, Organization, Part, PartRevision, Subpart
@@ -383,3 +387,121 @@ class ListUnitCostPrefetchTests(TestCase):
             {"q": "860", "action": ""},
         )
         self.assertEqual(response.status_code, 200)
+
+    def _foreign_print_fixture(self, count=5):
+        self.organization.currency = "IRR"
+        self.organization.save()
+        pt = self.organization.product_types.get(code="no_loi")
+        pt.overhead = Money(20, "IRR")
+        pt.save()
+        self.organization.invalidate_product_type_cache()
+        set_org_per_unit_rate("USD", "IRR", "42000")
+        set_org_per_unit_rate("USD", "IRR", "28000", kind=RATE_KIND_CUSTOMS)
+        raw_part, raw = self._make_part("FXRAW", "no_bom")
+        seller = create_a_fake_seller_part(
+            self.seller, raw_part.primary_manufacturer_part, 1, 1,
+            Money(100, "USD"), 1, Money(0, "USD"),
+        )
+        seller.shipping = Money(10, "USD")
+        seller.customs_duty_percent = Decimal("20")
+        seller.save()
+        _part, mid = self._make_part("FXMID", "no_loi")
+        self._add_child(mid, raw, 1)
+        products = []
+        for i in range(count):
+            _part, root = self._make_part(f"FXROOT{i}", "no_loi")
+            self._add_child(root, mid, 1)
+            products.append(root)
+        return raw, products
+
+    def test_print_preparation_rolls_up_each_product_only_once(self):
+        _part, raw = self._make_part("PRINT_RAW", "no_bom", seller_cost=7)
+        _part, product = self._make_part("PRINT_PROD", "no_loi")
+        self._add_child(product, raw, 1)
+        calls = []
+        original = PartRevision.indented
+
+        def counted(rev, *args, **kwargs):
+            calls.append(rev.pk)
+            return original(rev, *args, **kwargs)
+
+        with patch.object(PartRevision, "indented", counted):
+            page = prepare_all_part_revs_for_list_page(
+                PartRevision.objects.filter(pk__in=[product.pk, raw.pk])
+            )
+        self.assertEqual(calls, [product.pk])
+        by_pk = {rev.pk: rev for rev in page}
+        self.assertEqual(by_pk[product.pk].print_unit_cost, Money(27, self.currency))
+        self.assertEqual(by_pk[product.pk].print_unit_cost, by_pk[product.pk].list_unit_cost)
+        self.assertEqual(by_pk[raw.pk].print_unit_cost, Money(7, self.currency))
+
+    def test_raw_print_price_remains_quote_not_landed_cost(self):
+        raw, _products = self._foreign_print_fixture(0)
+        page = prepare_all_part_revs_for_list_page(PartRevision.objects.filter(pk=raw.pk))
+        row = list(page)[0]
+        self.assertEqual(row.list_unit_cost, Money(5180000, "IRR"))
+        self.assertEqual(row.print_unit_cost, Money(100, "USD"))
+
+    def test_print_fx_queries_are_bounded_and_new_calculations_see_edits(self):
+        _raw, products = self._foreign_print_fixture()
+
+        def prepare(revs):
+            return prepare_all_part_revs_for_list_page(
+                PartRevision.objects.filter(pk__in=[rev.pk for rev in revs])
+            )
+
+        with CaptureQueriesContext(connection) as single:
+            prepare(products[:1])
+        with CaptureQueriesContext(connection) as multiple:
+            page = prepare(products)
+        for queries in [single, multiple]:
+            fx = [q for q in queries if '"exchange_' in q["sql"]]
+            self.assertEqual(len(fx), 4)
+            self.assertTrue(all(q["sql"].lstrip().startswith("SELECT") for q in fx))
+        self.assertEqual(len(single), len(multiple))
+        self.assertTrue(all(rev.print_unit_cost == Money(5180020, "IRR") for rev in page))
+        set_org_per_unit_rate("USD", "IRR", "50000")
+        self.assertEqual(list(prepare(products[:1]))[0].print_unit_cost, Money(6060020, "IRR"))
+
+    def test_full_product_print_request_is_successful_with_bounded_fx(self):
+        _raw, products = self._foreign_print_fixture(210)
+        self.client.force_login(self.user)
+        start = perf_counter()
+        with CaptureQueriesContext(connection) as queries:
+            response = self.client.get(
+                reverse("bom:materials"), {"print": "1", "print_go": "1", "product": "1"}
+            )
+        elapsed = perf_counter() - start
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "bom/dashboard-print.html")
+        rows = list(response.context["part_revs"])
+        self.assertEqual(len(rows), len(products) + 1)  # nested product also matches
+        self.assertTrue(all(row.print_unit_cost == Money(5180020, "IRR") for row in rows))
+        fx = [q for q in queries if '"exchange_' in q["sql"]]
+        self.assertEqual(len(fx), 4)
+        self.assertContains(response, "FXROOT209")
+        self.assertContains(response, escape(str(rows[0].print_unit_cost)))
+        print(f"\nFull print: {len(rows)} products, {len(queries)} SQL queries, {len(fx)} FX SELECTs, {elapsed:.3f}s")
+
+    def test_print_fallback_calculates_unprepared_product(self):
+        _part, product = self._make_part("FALLBACK", "no_loi")
+        attach_print_unit_costs([product])
+        self.assertEqual(product.print_unit_cost, Money(20, self.currency))
+
+    def test_print_reuses_incomplete_product_rollup_and_warning(self):
+        _part, raw = self._make_part("NOPRICE", "no_bom")
+        _part, product = self._make_part("INCOMPLETE", "no_loi")
+        self._add_child(product, raw, 1)
+        page = self._prepare([product])
+        with patch.object(PartRevision, "indented", side_effect=AssertionError("duplicate rollup")):
+            attach_print_unit_costs(page)
+        row = list(page)[0]
+        self.assertTrue(row.bom_cost_incomplete)
+        self.assertEqual(row.print_unit_cost, row.list_unit_cost)
+
+    def test_independent_bom_rollup_bulk_loads_fx_once_per_kind(self):
+        _raw, products = self._foreign_print_fixture(1)
+        with CaptureQueriesContext(connection) as queries:
+            bom = PartRevision.objects.get(pk=products[0].pk).indented()
+        self.assertEqual(bom.bom_unit_cost, Money(5180020, "IRR"))
+        self.assertEqual(len([q for q in queries if '"exchange_' in q["sql"]]), 4)
