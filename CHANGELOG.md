@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.3](https://github.com/s-diaco/lithium-bom/compare/v3.3.2...v3.3.3) (2026-11-24)
+
+
+### Bug Fixes
+
+* bound print-list FX reads and reuse product rollups ([#236](https://github.com/s-diaco/lithium-bom/issues/236)) ([637e3de](https://github.com/s-diaco/lithium-bom/commit/637e3defa69fa5925f0bb54acc2545a912cb4c3d))
+
 ## [3.3.2](https://github.com/s-diaco/lithium-bom/compare/v3.3.1...v3.3.2) (2026-11-23)
 
 
