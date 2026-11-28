@@ -1242,6 +1242,10 @@ class SystemGroupAdminGuiTests(TestCase):
         self.assertNotContains(response, "Get the BoM")
         self.assertContains(response, "Import BoM")
         self.assertContains(
+            response,
+            "Pull a PAC Engineering BoM from the on-LAN SystemGroup CRM into Lithium.",
+        )
+        self.assertNotContains(
             response, "Missing child parts are resolved from the same CRM BoM list"
         )
         self.assertContains(response, "More options")
