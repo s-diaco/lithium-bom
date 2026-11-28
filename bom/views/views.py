@@ -2627,6 +2627,7 @@ def import_systemgroup_bom(request):
         AmbiguousBomMatch,
         ExistingBomConflict,
         NestedBomDependencyError,
+        NestedMaterialSelectionRequired,
         NoBomMatch,
         SystemGroupError,
         SystemGroupImportError,
@@ -2684,6 +2685,9 @@ def import_systemgroup_bom(request):
     revision_max_results = None
     match_query = None
     existing_bom_conflict = None
+    nested_material_required = None
+    nested_material_choices = []
+    nested_materials_submitted = []
     get_parent = request.GET.get("parent_part", "")
     get_rev = request.GET.get("parent_revision", "")
     initial_part = request.GET.get("part_id") or request.GET.get(
@@ -2783,6 +2787,16 @@ def import_systemgroup_bom(request):
             html_content = None
             json_content = None
             source = cleaned.get("source_file")
+            nested_materials = {}
+            organization.ensure_default_product_types()
+            valid_bom_codes = set(organization.product_type_codes(has_bom=True))
+            for idx, nested_pn in enumerate(request.POST.getlist("nested_pn")):
+                pn_clean = nested_pn.strip()
+                code = (request.POST.get(f"nested_material_{idx}") or "").strip()
+                if pn_clean and code and code in valid_bom_codes:
+                    nested_materials[pn_clean] = code
+                    nested_materials_submitted.append((pn_clean, code))
+
             if source is not None:
                 raw = source.read()
                 if isinstance(raw, bytes):
@@ -2796,8 +2810,8 @@ def import_systemgroup_bom(request):
                 else:
                     html_content = text
                     request.session[session_key] = {"kind": "html", "text": text}
-            elif cleaned.get("existing_bom_action"):
-                # Keep/replace re-POST: reuse the prior offline upload if any.
+            elif cleaned.get("existing_bom_action") or nested_materials:
+                # Keep/replace or nested-material re-POST: reuse the prior offline upload if any.
                 cached = request.session.get(session_key) or {}
                 if cached.get("kind") == "json" and cached.get("text"):
                     json_content = cached["text"]
@@ -2817,6 +2831,8 @@ def import_systemgroup_bom(request):
                     existing_bom_action=cleaned.get("existing_bom_action"),
                     material=cleaned.get("material") or None,
                     user_meta=profile,
+                    nested_materials=nested_materials or None,
+                    require_nested_material_selection=True,
                 )
             except AmbiguousBomMatch as exc:
                 bom_candidates = exc.matches
@@ -2860,6 +2876,19 @@ def import_systemgroup_bom(request):
                     _(
                         "This part/revision already has a BoM. Keep the existing tree "
                         "(append imported lines) or replace it."
+                    ),
+                )
+            except NestedMaterialSelectionRequired as exc:
+                nested_material_required = exc.children
+                nested_material_choices = [
+                    pt for pt in organization.product_types.all() if pt.has_bom
+                ]
+                messages.warning(
+                    request,
+                    _(
+                        "Some nested child BoMs did not match an automatic material "
+                        "type rule. Select a material type for each child below, "
+                        "then continue."
                     ),
                 )
             except NestedBomDependencyError as exc:

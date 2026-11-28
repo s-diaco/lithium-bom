@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import io
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -89,6 +90,28 @@ class NestedBomDependencyError(SystemGroupImportError):
             "Import aborted; nothing was written."
         ) % {"pn": part_number}
         super().__init__(message)
+
+
+@dataclass
+class UnresolvedNestedChild:
+    """A missing nested child BoM whose material type could not be inferred."""
+
+    part_number: str
+    revision: str
+    description: str
+    bom_id: str
+
+
+class NestedMaterialSelectionRequired(SystemGroupImportError):
+    """One or more missing nested child BoMs need user-selected material types."""
+
+    def __init__(self, children: list[UnresolvedNestedChild]):
+        self.children = children
+        pns = ", ".join(c.part_number for c in children)
+        super().__init__(
+            _("Select a material type for nested child BoM(s): %(pns)s.")
+            % {"pns": pns}
+        )
 
 
 def parsed_bom_to_csv_bytes(
@@ -202,6 +225,55 @@ def annotate_revision_candidates_with_lithium_boms(
     return entries
 
 
+_FRIT_PN_RE = re.compile(r"^[0-9]{4}[A-Z][0-9]{3}$")
+_POWDER_PN_RE = re.compile(r"^[A-Z]P[A-Z][0-9]{4}$")
+_COMPOUND_PN_RE = re.compile(r"^[A-Z]{3}[0-9]{4}$")
+
+
+def _resolve_org_product_type_code(
+    organization: Organization,
+    code: str,
+    fallback_name: str,
+) -> str | None:
+    by_code = organization.product_types_by_code()
+    if code in by_code:
+        return code
+    target_name = fallback_name.casefold()
+    for pt in by_code.values():
+        if pt.name.strip().casefold() == target_name:
+            return pt.code
+    return None
+
+
+def infer_product_type_code_from_part_number(
+    organization: Organization,
+    part_number: str,
+) -> str | None:
+    """Infer an organization ProductType code from a nested child part number.
+
+    Rules are evaluated in strict order (first match wins):
+    1. Starts with ``KR`` -> ink (``ink``)
+    2. 4 digits + 1 letter + 3 digits -> frit (``with_loi``)
+    3. 1 letter + ``P`` + 1 letter + 4 digits -> powder (``powder``)
+    4. 3 letters + 4 digits -> compound (``no_loi``)
+    """
+    pn = (part_number or "").strip().upper()
+    if not pn:
+        return None
+    target: tuple[str, str] | None = None
+    if pn.startswith("KR"):
+        target = ("ink", "Ink")
+    elif _FRIT_PN_RE.match(pn):
+        target = ("with_loi", "Frit")
+    elif _POWDER_PN_RE.match(pn):
+        target = ("powder", "Powder")
+    elif _COMPOUND_PN_RE.match(pn):
+        target = ("no_loi", "Compound")
+    if target is None:
+        return None
+    return _resolve_org_product_type_code(organization, target[0], target[1])
+
+
 def first_product_type_code(organization: Organization, *, has_bom: bool) -> str | None:
     """Return the first org product-type code with the given has_bom flag."""
     organization.ensure_default_product_types()
@@ -251,6 +323,10 @@ class _NestedImportContext:
     result: ImportResult = field(default_factory=ImportResult)
     # Optional offline map bom_id → (body, content_type) for tests.
     bom_documents: dict[str, tuple[str, str]] | None = None
+    nested_materials: dict[str, str] = field(default_factory=dict)
+    require_material_selection: bool = False
+    unresolved_children: list[UnresolvedNestedChild] = field(default_factory=list)
+    unresolved_seen: set[str] = field(default_factory=set)
 
 
 def _missing_child_part_numbers(organization: Organization, parsed: ParsedBom) -> list[tuple[str, str | None]]:
@@ -421,6 +497,8 @@ def import_missing_child_boms(
     list_entries: list[BomListEntry] | None = None,
     bom_documents: dict[str, tuple[str, str]] | None = None,
     dry_run: bool = False,
+    nested_materials: dict[str, str] | None = None,
+    require_material_selection: bool = False,
     _ctx: _NestedImportContext | None = None,
 ) -> ImportResult:
     """Import CRM BoMs for children missing in Lithium, depth-first.
@@ -430,6 +508,7 @@ def import_missing_child_boms(
     If not found, raise ``NestedBomDependencyError`` so the caller can abort
     without writing the parent BoM.
     """
+    is_root = _ctx is None
     ctx = _ctx or _NestedImportContext(
         organization=organization,
         client=client,
@@ -439,8 +518,12 @@ def import_missing_child_boms(
         list_entries=list_entries,
         bom_documents=bom_documents,
         dry_run=dry_run,
+        nested_materials=dict(nested_materials or {}),
+        require_material_selection=require_material_selection,
     )
-    nested_material = first_product_type_code(organization, has_bom=True)
+    fallback_material = first_product_type_code(organization, has_bom=True)
+    valid_codes = set(organization.product_types_by_code().keys())
+    has_multiple_bom_types = len(organization.product_type_codes(has_bom=True)) > 1
 
     for pn, line_rev in _missing_child_part_numbers(organization, parsed):
         # Re-check: a sibling import may have just created this part.
@@ -462,6 +545,44 @@ def import_missing_child_boms(
         if not child_parsed.parent_revision:
             child_parsed.parent_revision = (entry.revision or "").strip() or "1"
 
+        explicit_mat = (ctx.nested_materials.get(pn) or "").strip()
+        if explicit_mat and explicit_mat in valid_codes:
+            child_mat = explicit_mat
+        else:
+            inferred = infer_product_type_code_from_part_number(organization, pn)
+            if inferred:
+                child_mat = inferred
+            elif (
+                ctx.require_material_selection
+                and not ctx.dry_run
+                and has_multiple_bom_types
+            ):
+                if pn not in ctx.unresolved_seen:
+                    ctx.unresolved_seen.add(pn)
+                    ctx.unresolved_children.append(
+                        UnresolvedNestedChild(
+                            part_number=pn,
+                            revision=child_parsed.parent_revision or "",
+                            description=(
+                                child_parsed.parent_description
+                                or entry.description
+                                or ""
+                            ).strip(),
+                            bom_id=str(entry.bom_id or ""),
+                        )
+                    )
+                child_mat = fallback_material
+            else:
+                child_mat = fallback_material
+                if child_mat:
+                    ctx.result.warnings.append(
+                        _(
+                            "No material type rule matched nested child '%(pn)s'; "
+                            "defaulted to '%(mat)s'."
+                        )
+                        % {"pn": pn, "mat": child_mat}
+                    )
+
         ctx.visiting.add(pn)
         try:
             import_missing_child_boms(
@@ -474,7 +595,7 @@ def import_missing_child_boms(
                 child_parsed,
                 parent_part_number=pn,
                 parent_revision=child_parsed.parent_revision,
-                material=nested_material,
+                material=child_mat,
                 dry_run=ctx.dry_run,
             )
         finally:
@@ -501,6 +622,9 @@ def import_missing_child_boms(
             )
             % {"pn": pn, "rev": child_parsed.parent_revision or entry.revision or ""}
         )
+
+    if is_root and ctx.unresolved_children:
+        raise NestedMaterialSelectionRequired(ctx.unresolved_children)
 
     return ctx.result
 
@@ -684,6 +808,8 @@ def run_systemgroup_import(
     existing_bom_action: str | None = None,
     material: str | None = None,
     bom_documents: dict[str, tuple[str, str]] | None = None,
+    nested_materials: dict[str, str] | None = None,
+    require_nested_material_selection: bool = False,
 ) -> ImportResult:
     """Shared entry used by the management command and Admin UI.
 
@@ -823,6 +949,8 @@ def run_systemgroup_import(
             list_path=list_path,
             bom_documents=bom_documents,
             dry_run=dry_run,
+            nested_materials=nested_materials,
+            require_material_selection=require_nested_material_selection,
         )
         result = import_parsed_bom(
             organization,
