@@ -1242,6 +1242,10 @@ class SystemGroupAdminGuiTests(TestCase):
         self.assertNotContains(response, "Get the BoM")
         self.assertContains(response, "Import BoM")
         self.assertContains(
+            response,
+            "Pull a PAC Engineering BoM from the on-LAN SystemGroup CRM into Lithium.",
+        )
+        self.assertNotContains(
             response, "Missing child parts are resolved from the same CRM BoM list"
         )
         self.assertContains(response, "More options")
@@ -2295,3 +2299,270 @@ class SystemGroupNestedBomImportTests(TestCase):
             ).exists()
         )
         self.assertEqual(self.parent.latest().assembly.subparts.count(), 0)
+
+    def test_infer_product_type_code_from_part_number_order(self):
+        from bom.systemgroup.importer import infer_product_type_code_from_part_number
+
+        self.assertEqual(
+            infer_product_type_code_from_part_number(self.organization, "KR1234"),
+            "ink",
+        )
+        # Starts with KR beats 3 letters + 4 digits (compound).
+        self.assertEqual(
+            infer_product_type_code_from_part_number(self.organization, "KRA1234"),
+            "ink",
+        )
+        # 4 digits + 1 letter + 3 digits -> frit (with_loi).
+        self.assertEqual(
+            infer_product_type_code_from_part_number(self.organization, "1155F229"),
+            "with_loi",
+        )
+        # 1 letter + P + 1 letter + 4 digits -> powder (beats 3 letters + 4 digits).
+        self.assertEqual(
+            infer_product_type_code_from_part_number(self.organization, "APA1234"),
+            "powder",
+        )
+        # 3 letters + 4 digits -> compound (no_loi).
+        self.assertEqual(
+            infer_product_type_code_from_part_number(self.organization, "ABC1234"),
+            "no_loi",
+        )
+        # Unmatched -> None (fallback to Option 1).
+        self.assertIsNone(
+            infer_product_type_code_from_part_number(self.organization, "500-8888-00")
+        )
+
+    def test_nested_child_uses_inferred_material_type(self):
+        """Matched nested child PNs get their inferred ProductType automatically."""
+        import json
+
+        from bom.constants import NUMBER_SCHEME_INTELLIGENT
+        from bom.models import Organization, PartRevision
+
+        org = Organization.objects.create(
+            name="Intelligent Org",
+            owner=self.user,
+            number_scheme=NUMBER_SCHEME_INTELLIGENT,
+        )
+        org.ensure_default_product_types()
+        leaf_part = Part.objects.create(organization=org, number_item="LEAF-RAW-1")
+        PartRevision.objects.create(
+            part=leaf_part,
+            revision="1",
+            description="Existing leaf",
+            material="no_bom",
+        )
+        for child_pn, expected_code in (
+            ("KR1001", "ink"),
+            ("1155F229", "with_loi"),
+            ("APA1234", "powder"),
+            ("ABC1234", "no_loi"),
+        ):
+            with self.subTest(child_pn=child_pn):
+                parent_payload = json.dumps(
+                    {
+                        "bom_id": "90001",
+                        "parent": {
+                            "part_number": "PARENT-INT-1",
+                            "revision": "1",
+                            "description": "Parent intelligent",
+                        },
+                        "lines": [
+                            {
+                                "part_number": child_pn,
+                                "quantity": 1,
+                                "revision": "1",
+                                "description": "Nested child",
+                                "reference": "X1",
+                            }
+                        ],
+                    }
+                )
+                list_json = self._list_json(
+                    [
+                        {
+                            "id": "93001",
+                            "part_number": child_pn,
+                            "revision": "1",
+                            "description": "Typed nested child",
+                            "edit_url": "Edit.aspx?id=93001",
+                        }
+                    ]
+                )
+                result = run_systemgroup_import(
+                    org,
+                    bom_id="90001",
+                    parent_part_number="PARENT-INT-1",
+                    parent_revision="1",
+                    json_content=parent_payload,
+                    list_json=list_json,
+                    bom_documents={
+                        "93001": (
+                            self._child_json(child_pn, "1", leaf_pn="LEAF-RAW-1"),
+                            "application/json",
+                        ),
+                    },
+                    material="with_loi",
+                    existing_bom_action="keep",
+                    require_nested_material_selection=True,
+                )
+                self.assertTrue(result.ok, result.errors)
+                child = Part.from_part_number(child_pn, org)
+                self.assertIsNotNone(child)
+                self.assertEqual(child.latest().material, expected_code)
+
+    def test_nested_child_unmatched_raises_selection_required_and_accepts_override(self):
+        """Unmatched nested child PN triggers Option 1 and rolls back until chosen."""
+        from bom.systemgroup.importer import NestedMaterialSelectionRequired
+
+        child_pn = "500-8895-00"
+        list_json = self._list_json(
+            [
+                {
+                    "id": "94001",
+                    "part_number": child_pn,
+                    "revision": "1",
+                    "description": "Custom nested child",
+                    "edit_url": "Edit.aspx?id=94001",
+                }
+            ]
+        )
+        with self.assertRaises(NestedMaterialSelectionRequired) as ctx:
+            run_systemgroup_import(
+                self.organization,
+                bom_id="90001",
+                parent_part_number=self.parent.full_part_number(),
+                parent_revision=self.parent.latest().revision,
+                json_content=self._parent_json(child_pn, child_rev="1"),
+                list_json=list_json,
+                bom_documents={
+                    "94001": (self._child_json(child_pn, "1"), "application/json"),
+                },
+                existing_bom_action="keep",
+                require_nested_material_selection=True,
+            )
+        self.assertEqual([c.part_number for c in ctx.exception.children], [child_pn])
+        with self.assertRaises(Part.DoesNotExist):
+            Part.from_part_number(child_pn, self.organization)
+
+        result = run_systemgroup_import(
+            self.organization,
+            bom_id="90001",
+            parent_part_number=self.parent.full_part_number(),
+            parent_revision=self.parent.latest().revision,
+            json_content=self._parent_json(child_pn, child_rev="1"),
+            list_json=list_json,
+            bom_documents={
+                "94001": (self._child_json(child_pn, "1"), "application/json"),
+            },
+            existing_bom_action="keep",
+            nested_materials={child_pn: "powder"},
+            require_nested_material_selection=True,
+        )
+        self.assertTrue(result.ok, result.errors)
+        child = Part.from_part_number(child_pn, self.organization)
+        self.assertIsNotNone(child)
+        self.assertEqual(child.latest().material, "powder")
+
+    def test_view_nested_material_selection_fallback_flow(self):
+        """Admin UI prompts for unmatched nested child material type, then imports."""
+        import json
+        from unittest.mock import patch
+
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        self.profile = self.user.bom_profile()
+        self.profile.role = "A"
+        self.profile.systemgroup_username = "sguser"
+        self.profile.systemgroup_password = "sgpassword"
+        self.profile.save()
+        self.organization.systemgroup_import_enabled = True
+        self.organization.systemgroup_crm_base_url = "https://crm.example.com"
+        self.organization.save()
+        self.client.force_login(self.user)
+
+        child_pn = "500-8896-00"
+        parent_upload = SimpleUploadedFile(
+            "parent.json",
+            self._parent_json(child_pn, child_rev="1").encode("utf-8"),
+            content_type="application/json",
+        )
+        list_payload = json.dumps(
+            {
+                "rows": [
+                    {
+                        "id": "95001",
+                        "part_number": child_pn,
+                        "revision": "1",
+                        "description": "Custom nested child",
+                        "edit_url": "Edit.aspx?id=95001",
+                    }
+                ]
+            }
+        )
+        child_payload = self._child_json(child_pn, "1")
+
+        class _FakeClient:
+            def fetch_bom(self, bom_id):
+                assert str(bom_id) == "95001"
+                return child_payload, "application/json"
+
+        def _fake_list_revisions(part_number, **kwargs):
+            from lithium_systemgroup import load_bom_list_entries
+
+            entries = [
+                e
+                for e in load_bom_list_entries(list_json=list_payload)
+                if part_number in (e.part_number or "")
+            ]
+            return type(
+                "SearchResult", (), {"entries": entries, "truncated": False}
+            )()
+
+        url = reverse("bom:import-systemgroup-bom")
+        with (
+            patch(
+                "bom.systemgroup.access.client_for_user_meta",
+                return_value=_FakeClient(),
+            ),
+            patch(
+                "bom.systemgroup.importer.list_revisions_for_part",
+                side_effect=_fake_list_revisions,
+            ),
+        ):
+            resp1 = self.client.post(
+                url,
+                data={
+                    "material": "with_loi",
+                    "part_id": self.parent.full_part_number(),
+                    "parent_part_number": self.parent.full_part_number(),
+                    "parent_revision": self.parent.latest().revision,
+                    "bom_id": "90001",
+                    "existing_bom_action": "keep",
+                    "source_file": parent_upload,
+                },
+            )
+            self.assertEqual(resp1.status_code, 200)
+            self.assertContains(resp1, "sg-nested-material-picker")
+            self.assertContains(resp1, child_pn)
+            with self.assertRaises(Part.DoesNotExist):
+                Part.from_part_number(child_pn, self.organization)
+
+            resp2 = self.client.post(
+                url,
+                data={
+                    "material": "with_loi",
+                    "part_id": self.parent.full_part_number(),
+                    "parent_part_number": self.parent.full_part_number(),
+                    "parent_revision": self.parent.latest().revision,
+                    "bom_id": "90001",
+                    "existing_bom_action": "keep",
+                    "nested_pn": [child_pn],
+                    "nested_material_0": "ink",
+                },
+            )
+            self.assertEqual(resp2.status_code, 302)
+
+        child = Part.from_part_number(child_pn, self.organization)
+        self.assertIsNotNone(child)
+        self.assertEqual(child.latest().material, "ink")

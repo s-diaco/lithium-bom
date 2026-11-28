@@ -19,7 +19,7 @@
             <div class="bom-panel-pad">
                 <h1 class="mb-2 text-lg font-semibold text-ink">{% trans "Import SystemGroup BoM" %}</h1>
                 <p class="mb-4 text-sm text-ink-muted">
-                    {% trans "Pull a PAC Engineering BoM from the on-LAN SystemGroup CRM into Lithium. Missing child parts are resolved from the same CRM BoM list first (recursively); existing parts are reused. If a nested dependency cannot be found, the import is aborted." %}
+                    {% trans "Pull a PAC Engineering BoM from the on-LAN SystemGroup CRM into Lithium." %}
                 </p>
 
                 <div class="mb-4 flex flex-wrap items-center gap-3">
@@ -31,6 +31,63 @@
                         {% trans "Manage SystemGroup login" %}
                     </a>
                 </div>
+
+                {% if nested_material_required %}
+                    <div class="mb-6 bom-panel-pad border border-amber-300 bg-amber-50" id="sg-nested-material-picker">
+                        <h2 class="mb-2 text-base font-semibold text-ink">{% trans "Select material type for nested child BoMs" %}</h2>
+                        <p class="mb-4 text-sm text-ink-muted">
+                            {% trans "The following nested child parts did not match an automatic material type rule. Choose a material type for each one to continue importing." %}
+                        </p>
+                        <form action="{% url 'bom:import-systemgroup-bom' %}" method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <input type="hidden" name="part_id" value="{{ form.part_id.value|default_if_none:'' }}">
+                            <input type="hidden" name="parent_part_number" value="{{ form.parent_part_number.value|default_if_none:'' }}">
+                            <input type="hidden" name="parent_revision" value="{{ form.parent_revision.value|default_if_none:'' }}">
+                            <input type="hidden" name="bom_id" value="{{ form.bom_id.value|default_if_none:'' }}">
+                            <input type="hidden" name="crm_url" value="{{ form.crm_url.value|default_if_none:'' }}">
+                            {% if form.browse_list.value %}<input type="hidden" name="browse_list" value="on">{% endif %}
+                            {% if form.dry_run.value %}<input type="hidden" name="dry_run" value="on">{% endif %}
+                            <input type="hidden" name="material" value="{{ form.material.value|default_if_none:'' }}">
+                            <input type="hidden" name="existing_bom_action" value="{{ form.existing_bom_action.value|default_if_none:'' }}">
+                            <div class="overflow-x-auto mb-4">
+                                <table class="bom-table w-full text-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>{% trans "Part number" %}</th>
+                                            <th>{% trans "Rev" %}</th>
+                                            <th>{% trans "Description" %}</th>
+                                            <th>{% trans "Material Type" %}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for child in nested_material_required %}
+                                            <tr>
+                                                <td dir="ltr">
+                                                    {{ child.part_number }}
+                                                    <input type="hidden" name="nested_pn" value="{{ child.part_number }}">
+                                                </td>
+                                                <td dir="ltr">{{ child.revision|default:"—" }}</td>
+                                                <td>{{ child.description }}</td>
+                                                <td>
+                                                    <select name="nested_material_{{ forloop.counter0 }}" class="bom-input w-full" required>
+                                                        <option value="">{% trans "Select material type…" %}</option>
+                                                        {% for pt in nested_material_choices %}
+                                                            <option value="{{ pt.code }}">{% trans pt.name %}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="flex flex-wrap gap-3">
+                                <button class="bom-btn-primary" type="submit">{% trans "Continue import" %}</button>
+                                <a href="{% url 'bom:import-systemgroup-bom' %}" class="bom-btn-ghost">{% trans "Cancel" %}</a>
+                            </div>
+                        </form>
+                    </div>
+                {% endif %}
 
                 {% if existing_bom_conflict %}
                     <div class="mb-6 bom-panel-pad border border-amber-300 bg-amber-50">
@@ -50,6 +107,10 @@
                             {% if form.browse_list.value %}<input type="hidden" name="browse_list" value="on">{% endif %}
                             {% if form.dry_run.value %}<input type="hidden" name="dry_run" value="on">{% endif %}
                             <input type="hidden" name="material" value="{{ form.material.value|default_if_none:'' }}">
+                            {% for pn, code in nested_materials_submitted %}
+                                <input type="hidden" name="nested_pn" value="{{ pn }}">
+                                <input type="hidden" name="nested_material_{{ forloop.counter0 }}" value="{{ code }}">
+                            {% endfor %}
                             <button class="bom-btn-secondary" type="submit" name="existing_bom_action" value="keep">{% trans "Keep existing BoM" %}</button>
                             <button class="bom-btn-primary" type="submit" name="existing_bom_action" value="replace">{% trans "Replace with imported BoM" %}</button>
                             <a href="{% url 'bom:import-systemgroup-bom' %}" class="bom-btn-ghost">{% trans "Cancel" %}</a>
